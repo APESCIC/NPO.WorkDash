@@ -17,6 +17,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | The semantic version of this release, read from the VERSION file in the
+    | project root. It is shown in the app footer and the Super Admin area.
+    | Bump it (and CHANGELOG.md) as part of each release.
+    |
+    */
+
+    'version' => is_file(base_path('VERSION'))
+        ? trim((string) file_get_contents(base_path('VERSION')))
+        : '0.0.0',
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
