@@ -1,5 +1,7 @@
 # NPO-WorkDash
 
+[![CI](https://github.com/APESCIC/NPO.WorkDash/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APESCIC/NPO.WorkDash/actions/workflows/ci.yml)
+
 Hosted multi-tenant SaaS for UK charities and CICs, built with Laravel 12, React (Inertia, TypeScript, Tailwind), MySQL 8, Pest and Vite.
 
 Production runs on the Cloudron LAMP app with MySQL 8.0. Local development uses [Laragon](https://laragon.org/) on Windows.
@@ -75,6 +77,8 @@ Emails (for example registration verification) appear in Mailpit at <http://127.
 ```powershell
 composer test            # Pint style check, then the Pest suite
 composer test:coverage   # Pest with a coverage summary (needs pcov)
+composer analyse         # Larastan (PHPStan level 5)
+composer ci:check        # everything CI runs, except the Vite build
 ```
 
 Tests run against the `npo_workdash_testing` database (configured in `phpunit.xml`) and refresh it on every run.
@@ -86,6 +90,14 @@ npm run types:check
 npm run lint:check
 npm run format:check
 ```
+
+### Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request to `main`, in three parallel jobs:
+
+- **PHP lint and static analysis**: Pint and Larastan.
+- **Pest (MySQL 8.0)**: the full suite against a MySQL 8.0 service container, with a pcov coverage summary in the log.
+- **Frontend**: Wayfinder route generation, ESLint, Prettier, `tsc` and `npm run build`.
 
 ### Notes
 

@@ -106,6 +106,7 @@ export default [
     },
     {
         ignores: [
+            '.vite',
             'vendor',
             'node_modules',
             'public',
