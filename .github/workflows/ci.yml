@@ -197,7 +197,9 @@ jobs:
           php artisan migrate:rollback --step=3 --force
           php artisan migrate --force
           php artisan migrate:status | tail -n 8
-          php artisan tinker --execute='exit(App\Models\Tenant::count() === 3 && App\Models\User::count() === 25 ? 0 : 1);'
+          counts="$(php artisan tinker --execute='echo App\Models\Tenant::count()."/".App\Models\User::count();')"
+          echo "tenants/users after rollback and re-migrate: $counts"
+          [[ "$counts" == "3/25" ]]
 
   frontend:
     name: Frontend lint, types and build
