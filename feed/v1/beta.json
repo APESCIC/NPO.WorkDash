@@ -1,0 +1,40 @@
+{
+    "schema": 1,
+    "channel": "beta",
+    "generated_at": "2026-10-27T04:28:16+00:00",
+    "releases": [
+        {
+            "version": "0.2.0-beta.1",
+            "channel": "beta",
+            "released_at": "2026-10-27T04:26:51+00:00",
+            "changelog": "### Added\n\n- Release workflow: every `vX.Y.Z` tag builds `npo-workdash-X.Y.Z.zip` with `vendor/` and `public/build` included (no `.env`, tests, `node_modules` or dev tooling). It fails if `VERSION` does not match the tag, and installs the zip on a plain PHP container without Composer or Node and loads `/login` before publishing.\n- Release manifest (`manifest.json`) with version, channel, release date, minimum PHP, MySQL 8.0 and MariaDB 10.6, required extensions, minimum version to update from, migration list and a SHA-256 per file. The zip is published with a `.sha256` checksum and an Ed25519 `.sig` signature, and `php artisan release:verify` checks both against the release key.\n- Stable and beta update feeds on GitHub Pages (`feed/v1/stable.json` and `beta.json`), validated against a versioned JSON schema. Pre-release tags (`-beta.N`) appear only in the beta feed and are published as GitHub pre-releases.\n- Licence-gated update downloads, built and switched off: with `UPDATES_LICENCE_REQUIRED=true`, the app's `/updates/feed/{channel}` endpoint withholds download links from installations without a valid licence key. Installations send their licence key and installation ID with feed requests.\n- Release signing and key rotation guide in `docs/security/release-signing.md`.\n\n### Changed\n\n- Releases are published by the Release workflow instead of `gh release create`. `build-release.sh` and the release zip share `deploy/release/stage.sh`.",
+            "size": 11026137,
+            "sha256": "057d4f91518448a40e2da1e3d5fd03bddf82e4de9bc74d779601f3a784a3daad",
+            "download_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.0-beta.1/npo-workdash-0.2.0-beta.1.zip",
+            "signature_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.0-beta.1/npo-workdash-0.2.0-beta.1.zip.sig",
+            "requirements": {
+                "php": "8.3.0",
+                "mysql": "8.0.0",
+                "mariadb": "10.6.0",
+                "extensions": [
+                    "ctype",
+                    "curl",
+                    "dom",
+                    "fileinfo",
+                    "filter",
+                    "hash",
+                    "mbstring",
+                    "openssl",
+                    "pcre",
+                    "pdo",
+                    "pdo_mysql",
+                    "session",
+                    "tokenizer",
+                    "xml",
+                    "zip"
+                ]
+            },
+            "min_update_from": "0.1.0"
+        }
+    ]
+}
