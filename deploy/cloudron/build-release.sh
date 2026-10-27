@@ -14,7 +14,8 @@ set -euo pipefail
 
 ref="${1:-HEAD}"
 root="$(git rev-parse --show-toplevel)"
-sha="$(git -C "$root" rev-parse --short "$ref")"
+# ^{commit}: an annotated tag's own object ID would not match the deployed commit.
+sha="$(git -C "$root" rev-parse --short "$ref^{commit}")"
 version="$(git -C "$root" show "$ref:VERSION" | tr -d '[:space:]')"
 name="npo-workdash-${version}-${sha}"
 work="$(mktemp -d)"

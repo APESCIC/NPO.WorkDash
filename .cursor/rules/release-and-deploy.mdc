@@ -1,0 +1,31 @@
+---
+description: Every completed change is committed, merged, released and deployed to Cloudron
+alwaysApply: true
+---
+
+# Commit, merge, release, deploy
+
+Work is done only when it is live. Full detail: `AGENTS.md`, "Definition of done" and "Deploying to Cloudron".
+
+1. Run the checks: `composer ci:check` (and `npm run build` if the frontend changed).
+2. In the PR, move the change from `## [Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD` in `CHANGELOG.md` and set `VERSION`. While 0.x: minor for features or breaking changes, patch for fixes, chores and docs.
+3. Commit, push, `gh pr create --base main` with `Closes #<issue>`.
+4. `gh pr checks <pr> --watch` until green. Never merge red.
+5. `gh pr merge <pr> --squash --delete-branch`, then `git checkout main; git pull --ff-only`.
+6. Release the merge commit:
+
+   ```powershell
+   git tag -a vX.Y.Z -m "vX.Y.Z" <merge-sha>; git push origin vX.Y.Z
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes "<CHANGELOG section>"
+   ```
+
+7. Deploy to production (`npo-workdash.apes.org.uk`, app `b253bb6f-f66a-49cc-aa7f-79464eebdc91`):
+
+   ```powershell
+   & "C:\Program Files\Git\bin\bash.exe" deploy/cloudron/cloudron-deploy.sh vX.Y.Z
+   ```
+
+   It must end with `/up` returning 200 and the live `REVISION` matching. If it fails, read the output, fix or roll back (`docs/deploy/cloudron.md`), and report it.
+8. Report: PR link, short merge SHA, release link, deploy evidence, issues closed.
+
+Do not claim a step happened without its command output.

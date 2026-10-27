@@ -1,0 +1,32 @@
+---
+description: Keep GitHub milestones, issues and sub-issues current for every change in NPO.WorkDash
+alwaysApply: true
+---
+
+# Work lifecycle
+
+Full detail: `AGENTS.md`, section "Work lifecycle". Repository: `APESCIC/NPO.WorkDash`.
+
+Before the first edit:
+
+1. Find the issue (`gh issue list --search "..."`) or create one with a `[Epic]`, `[Story]`, `[Task]`, `[Bug]` or `[Chore]` title prefix, the matching label, area labels, and the usual body sections (Summary, Context / why, Scope, Acceptance criteria, Out of scope, Dependencies).
+2. Set its milestone (`gh issue edit <n> --milestone "M0 Foundation"`) and link it under its parent:
+
+   ```powershell
+   $id = gh api repos/APESCIC/NPO.WorkDash/issues/<child> --jq '.id'
+   gh api -X POST repos/APESCIC/NPO.WorkDash/issues/<parent>/sub_issues -F sub_issue_id=$id
+   ```
+
+3. Branch from `main`: `cursor/{feature|fix|chore}/<issue>-<slug>`. Never commit to `main`.
+
+While working:
+
+- Comment on the issue for decisions, blockers, scope changes and when the PR opens.
+- Split large work into linked sub-issues instead of growing one issue.
+- Tick acceptance criteria as they are met.
+
+When finished:
+
+- Close the leaf issue with a comment linking the PR and release.
+- Close a parent only when all its sub-issues are closed.
+- Check the milestone's open/closed count.

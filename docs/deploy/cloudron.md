@@ -43,6 +43,26 @@ Everything under `/app/data` is included in Cloudron's backups.
 
 The database and mail credentials are not in `.env`: the app reads the addon's `CLOUDRON_MYSQL_*` and `CLOUDRON_MAIL_SMTP_*` variables (see [configuration and secrets](../security/secrets.md)). Because Cloudron can rotate these, `run.sh` rebuilds the config cache on every start.
 
+## Deploy with the Cloudron CLI (recommended)
+
+[`deploy/cloudron/cloudron-deploy.sh`](../../deploy/cloudron/cloudron-deploy.sh) does the whole of [Deploying a release](#deploying-a-release) from your machine, and most of the one-time setup. It needs the [Cloudron CLI](https://docs.cloudron.io/packaging/cli/) (`npm install -g cloudron`, then `cloudron login my.<cloudron domain>`) plus the build requirements above. Run it from Git Bash, or from PowerShell through Git Bash:
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" deploy/cloudron/cloudron-deploy.sh v0.1.1
+```
+
+For a tag that exists on `origin`, the script:
+
+1. builds the archive with `build-release.sh`
+2. uploads it to `/app/data/releases/` with `cloudron push`
+3. installs `run.sh`, `deploy.sh`, `rollback.sh` and the Apache config from that release, so script fixes ship with each release
+4. runs `deploy.sh` on the app with `cloudron exec`, then restarts the app with `cloudron restart`
+5. waits for `/up` to return 200 and checks that `/app/data/workdash/REVISION` matches the tag's commit, exiting with an error otherwise
+
+On a fresh LAMP app, add `--bootstrap` once. It also sets `PHP_VERSION=8.3` and creates `/app/data/shared/.env` from the template, with `APP_ENV=production` and a newly generated `APP_KEY`. The key is never printed: copy it from the File Manager into the password manager. An existing `.env` is never overwritten. You still set the memory limit (setup step 1) in the dashboard, because the CLI cannot.
+
+The defaults target production. Set `CLOUDRON_APP` (app ID or location) and `DEPLOY_URL` to deploy elsewhere, for example a future staging app.
+
 ## One-time setup (per app)
 
 1. **Install the LAMP app** from the Cloudron App Store (production is at `npo-workdash.apes.org.uk`; a staging app could use `staging.npo-workdash.apes.org.uk`). Then, in the app's settings:
