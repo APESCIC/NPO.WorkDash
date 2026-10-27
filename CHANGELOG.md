@@ -15,6 +15,12 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-27
+
+### Fixed
+
+- The Cloudron app no longer crash-loops on start. The LAMP image sources `run.sh` under `set -eu`, and `run.sh` assigned the image's readonly `php_version` variable, which stopped the start script before Apache. `run.sh` now runs in a subshell, so it cannot abort the start script, and its queue worker and scheduler loops keep restarting after a non-zero exit. The deployment guide explains this and how to recover a crash-looping app.
+
 ## [0.1.0] - 2026-10-27
 
 ### Added
@@ -28,5 +34,6 @@ While the major version is 0, bump the minor version for new features or breakin
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/APESCIC/NPO.WorkDash/releases/tag/v0.1.0

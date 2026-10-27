@@ -2,67 +2,73 @@
 #
 # Cloudron LAMP startup script for NPO.WorkDash.
 #
-# Copy to /app/data/run.sh. Cloudron runs it on every container start, before
-# Apache starts, so it must not block: long-running processes are started in
-# the background and restarted automatically if they exit or are killed.
+# Copy to /app/data/run.sh. On every container start, before Apache starts,
+# the LAMP image's start.sh *sources* this file while running under `set -eu`
+# with `php_version` declared readonly. The body therefore runs in a subshell
+# with `set +e`, so nothing here can abort start.sh, end it early or clash with
+# its variables. It must not block: long-running processes are started in the
+# background and restarted automatically if they exit or are killed.
 #
 # Output goes to the app's log (Cloudron dashboard, Logs).
 
-set -u
+(
+    set +e
+    set -u
 
-APP_DIR="${APP_DIR:-/app/data/workdash}"
-PHP_VERSION_FILE=/app/data/PHP_VERSION
+    APP_DIR="${APP_DIR:-/app/data/workdash}"
+    PHP_VERSION_FILE=/app/data/PHP_VERSION
 
-# The CLI `php` is always the image default, so use the version the web server runs.
-# The file holds `; comment` lines and `PHP_VERSION=8.3`.
-php_version="$(grep -v '^[[:space:]]*;' "$PHP_VERSION_FILE" 2> /dev/null | grep -oE '[0-9]+\.[0-9]+' | tail -n1 || true)"
-if [[ -n "$php_version" ]] && command -v "php$php_version" > /dev/null; then
-    PHP_BIN="php$php_version"
-else
-    PHP_BIN=php
-fi
-
-# Run as www-data while keeping the environment, so CLOUDRON_MYSQL_* and
-# CLOUDRON_MAIL_* reach Laravel (plain `sudo -u` would strip them).
-as_www_data() {
-    if command -v gosu > /dev/null; then
-        gosu www-data "$@"
+    # The CLI `php` is always the image default, so use the version the web server runs.
+    # The file holds `; comment` lines and `PHP_VERSION=8.3`.
+    cli_php_version="$(grep -v '^[[:space:]]*;' "$PHP_VERSION_FILE" 2> /dev/null | grep -oE '[0-9]+\.[0-9]+' | tail -n1)"
+    if [[ -n "$cli_php_version" ]] && command -v "php$cli_php_version" > /dev/null; then
+        PHP_BIN="php$cli_php_version"
     else
-        sudo -E -u www-data "$@"
+        PHP_BIN=php
     fi
-}
 
-log() {
-    echo "[run.sh $(date -u +%H:%M:%S)] $*"
-}
+    # Run as www-data while keeping the environment, so CLOUDRON_MYSQL_* and
+    # CLOUDRON_MAIL_* reach Laravel (plain `sudo -u` would strip them).
+    as_www_data() {
+        if command -v gosu > /dev/null; then
+            gosu www-data "$@"
+        else
+            sudo -E -u www-data "$@"
+        fi
+    }
 
-if [[ ! -f "$APP_DIR/artisan" ]]; then
-    log "No app found at $APP_DIR, skipping queue worker and scheduler. Deploy first (docs/deploy/cloudron.md)."
-    exit 0
-fi
+    log() {
+        echo "[run.sh $(date -u +%H:%M:%S)] $*"
+    }
 
-# Cloudron can rotate addon credentials between restarts, so rebuild the
-# config cache from the current environment on every start.
-log "Caching configuration with $PHP_BIN"
-as_www_data "$PHP_BIN" "$APP_DIR/artisan" config:cache --no-interaction || log "config:cache failed"
+    if [[ ! -f "$APP_DIR/artisan" ]]; then
+        log "No app found at $APP_DIR, skipping queue worker and scheduler. Deploy first (docs/deploy/cloudron.md)."
+        exit 0
+    fi
 
-# Restart a command forever: on normal exit (for example --max-time or
-# queue:restart after a deploy), on crash, or when killed.
-supervise() {
-    local name="$1"
-    shift
+    # Cloudron can rotate addon credentials between restarts, so rebuild the
+    # config cache from the current environment on every start.
+    log "Caching configuration with $PHP_BIN"
+    as_www_data "$PHP_BIN" "$APP_DIR/artisan" config:cache --no-interaction || log "config:cache failed"
 
-    (
-        while true; do
-            log "Starting $name"
-            as_www_data "$PHP_BIN" "$APP_DIR/artisan" "$@"
-            log "$name exited with status $?, restarting in 5 seconds"
-            sleep 5
-        done
-    ) &
-}
+    # Restart a command forever: on normal exit (for example --max-time or
+    # queue:restart after a deploy), on crash, or when killed.
+    supervise() {
+        local name="$1"
+        shift
 
-supervise "queue worker" queue:work --sleep=3 --tries=3 --max-time=3600 --no-interaction
-supervise "scheduler" schedule:work --no-interaction
+        (
+            while true; do
+                log "Starting $name"
+                as_www_data "$PHP_BIN" "$APP_DIR/artisan" "$@"
+                log "$name exited with status $?, restarting in 5 seconds"
+                sleep 5
+            done
+        ) &
+    }
 
-log "Queue worker and scheduler started"
+    supervise "queue worker" queue:work --sleep=3 --tries=3 --max-time=3600 --no-interaction
+    supervise "scheduler" schedule:work --no-interaction
+
+    log "Queue worker and scheduler started"
+)
