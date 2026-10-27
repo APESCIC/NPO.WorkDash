@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
