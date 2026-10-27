@@ -1,6 +1,40 @@
 {
     "schema": 1,
     "channel": "stable",
-    "generated_at": "2026-10-27T06:10:02+00:00",
-    "releases": []
+    "generated_at": "2026-10-27T06:30:17+00:00",
+    "releases": [
+        {
+            "version": "0.2.0",
+            "channel": "stable",
+            "released_at": "2026-10-27T06:28:34+00:00",
+            "changelog": "First stable release with install and updates: NPO.WorkDash now installs from one signed zip on shared hosting, Cloudron or a VPS, and updates itself from the browser or the command line. It includes everything from 0.2.0-beta.1, beta.2 and beta.3 below.\n\n### Added\n\n- Update emails to Super Admins: once per new release on their channel (a daily check that never installs anything), and when an update succeeds, fails or is rolled back. The emails give the from and to versions, who started the update, how long it took, the reason for any failure, and a link to the update log. Logs live in `storage/logs/updates/` and can be read from the Updates page.\n- Install and update guides in `docs/install/` for cPanel, Plesk, DirectAdmin, Cloudron and VPS, covering upload, database, web folder, cron and the first update, with troubleshooting for permissions, 500 errors and cron using the wrong PHP. The wizard links to the right guide.\n- Compatibility workflow. It installs a signed release zip and updates it to a newer one on PHP 8.3 and 8.4 against MySQL 8.0, MariaDB 10.6 and MariaDB 10.11, in the docroot, `public_html` and subdomain layouts. A restricted-PHP job repeats this with a 30-second time limit, 256 MB of memory, and `exec`, `proc_open` and `symlink` disabled.\n- `php artisan app:update --step` runs one update step and exits, the same unit of work as one web request.",
+            "size": 11726304,
+            "sha256": "cd1e7293c6aeabf9f5d7a2ed95807d3a6c8068c40b2106b008393241ebd0ea5d",
+            "download_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.0/npo-workdash-0.2.0.zip",
+            "signature_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.0/npo-workdash-0.2.0.zip.sig",
+            "requirements": {
+                "php": "8.3.0",
+                "mysql": "8.0.0",
+                "mariadb": "10.6.0",
+                "extensions": [
+                    "ctype",
+                    "curl",
+                    "dom",
+                    "fileinfo",
+                    "filter",
+                    "hash",
+                    "mbstring",
+                    "openssl",
+                    "pcre",
+                    "pdo",
+                    "pdo_mysql",
+                    "session",
+                    "tokenizer",
+                    "xml",
+                    "zip"
+                ]
+            },
+            "min_update_from": "0.1.0"
+        }
+    ]
 }
