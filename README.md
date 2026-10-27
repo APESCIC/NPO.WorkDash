@@ -62,7 +62,9 @@ php artisan migrate:fresh --seed
 
 `.env.example` is already set up for Laragon: `APP_URL=http://npo-workdash.test`, MySQL on `127.0.0.1:3306` as `root`, and mail sent over SMTP to Mailpit on `127.0.0.1:1025`.
 
-Seeding in the `local` environment creates a fictional demo account: `demo@example.test` / `password`. Seeders never contain real personal data.
+Seeding in the `local` environment creates a fictional demo account: `demo@example.test` / `password`. Seeders never contain real personal data: seeded email addresses must use the reserved `example.test` domain, and a test enforces this. Outside `local`, `db:seed` creates no demo accounts. Each module adds its own demo data to `DemoSeeder` as it lands (the demo Super Admin arrives with the Super Admin area in M1).
+
+Reset your local database to a clean, seeded state at any time with `php artisan migrate:fresh --seed`.
 
 ### 4. Run it
 
@@ -71,6 +73,8 @@ Seeding in the `local` environment creates a fictional demo account: `demo@examp
 **Option B, without Apache:** run `composer dev`. This starts `php artisan serve` on <http://127.0.0.1:8000>, the queue worker and Vite together. Set `APP_URL=http://127.0.0.1:8000` in `.env` if you use this option.
 
 Emails (for example registration verification) appear in Mailpit at <http://127.0.0.1:8025>.
+
+If a page renders blank and the Vite output shows `Failed to resolve import "@/..."` for a file that exists (this can happen after switching branches), stop and restart `npm run dev` or `composer dev`.
 
 ### 5. Test
 
