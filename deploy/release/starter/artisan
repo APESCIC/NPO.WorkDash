@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * Runs artisan from the live release, so cron and terminal commands keep
+ * working after updates: php /path/to/npo-workdash/artisan schedule:run
+ */
+
+use Illuminate\Foundation\Application;
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+$release = require __DIR__.'/current.php';
+
+require $release.'/vendor/autoload.php';
+
+/** @var Application $app */
+$app = require_once $release.'/bootstrap/app.php';
+
+exit($app->handleCommand(new ArgvInput));

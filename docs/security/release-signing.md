@@ -6,7 +6,7 @@ Every tag `vX.Y.Z` (or `vX.Y.Z-beta.N`) runs the [Release workflow](../../.githu
 
 | Asset | Purpose |
 | --- | --- |
-| `npo-workdash-X.Y.Z.zip` | One `npo-workdash/` folder with `vendor/` and `public/build` included. No `.env`, tests, `node_modules` or dev tooling. |
+| `npo-workdash-X.Y.Z.zip` | One `npo-workdash/` folder in the release layout: `current.php` (the live release pointer), an `artisan` proxy for cron, the `public/` web root with `check.php`, `releases/X.Y.Z/` (the app, with `vendor/` and `public/build` included) and `shared/storage/`. No `.env`, tests, `node_modules` or dev tooling. |
 | `npo-workdash-X.Y.Z.zip.sha256` | SHA-256 of the zip, in `sha256sum` format. |
 | `npo-workdash-X.Y.Z.zip.sig` | Detached Ed25519 signature of the zip, base64. |
 | `manifest.json` | Version, channel, release date, minimum PHP, MySQL and MariaDB versions, required extensions, minimum version to update from, migration list and a SHA-256 per file. Also inside the zip. |

@@ -38,6 +38,7 @@ class SecurityController extends Controller implements HasMiddleware
             $request->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
+            $props['twoFactorRequired'] = $request->user()->is_super_admin === true && ! $props['twoFactorEnabled'];
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
 

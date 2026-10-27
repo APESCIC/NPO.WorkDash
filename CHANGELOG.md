@@ -15,6 +15,29 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+## [0.2.0-beta.2] - 2026-10-27
+
+### Added
+
+- Web install wizard at `/install` for hosts with only a browser and a file manager. Its steps: welcome, server requirements, folder permissions, database (tests the connection, version and charset, and warns when the database is not empty), migrations (one per request, with a progress bar), site address and timezone, email (with an SMTP test), Super Admin, first workspace, cron and finish. Each step stays well inside a 30-second PHP limit, and refreshing the browser resumes at the current step.
+- `php artisan app:install`, with prompts or `--no-interaction` flags, running the same installer service as the wizard. On Cloudron it reads the MySQL addon variables.
+- One requirements checker shared by a standalone `check.php`, the wizard and `php artisan app:check`. It reports pass, warn or fail for PHP 8.3+, extensions, disabled functions, database version and charset, writable folders, memory, execution time, disk space, HTTPS, URL rewriting and outbound HTTPS, with cPanel, Plesk and DirectAdmin hints. MySQL below 8.0 and MariaDB below 10.6 fail.
+- Release layout in the zip:
+  - `npo-workdash/public/` is the web root (or its contents go in a fixed `public_html`, including a subdomain folder).
+  - `current.php` is the only file an update rewrites.
+  - `.env` and storage live in `shared/` and are kept across releases.
+  - A stable `artisan` proxy serves cron.
+  - Dotfiles and layout helpers are denied over HTTP.
+- Super Admins, with a `super-admin` gate and `php artisan app:super-admin <email>`. Super Admin passwords need at least 12 characters and are checked against known breaches when online. Super Admins are sent to set up two-factor authentication before using the app.
+- Workspaces table, with workspace 1 created at install. There are no default accounts or passwords.
+- The installer locks after use: a `storage/installed.lock` file plus an `installations` record. Every `/install` route returns 404, deleting the lock file alone does not reopen it, `app:install` refuses to run again, and the finish screen offers to delete the installer files.
+- Shared-hosting background jobs: with `QUEUE_RUNNER=cron` (the default outside Cloudron), the per-minute scheduler runs `queue:work --stop-when-empty`. The wizard shows the exact cron line for the detected PHP binary. Super Admins see a warning when the scheduler has not run for 10 minutes, and the new Installation page in the Super Admin area shows its status. Cloudron keeps its supervised worker.
+
+### Changed
+
+- Production databases that already have users are marked as installed, with workspace 1, by a migration, so existing installs never see the wizard.
+- The release smoke test installs the zip with Apache in the docroot, `public_html` and subdomain-folder layouts, and checks that `.env`, storage and code cannot be reached over HTTP.
+
 ## [0.2.0-beta.1] - 2026-10-27
 
 ### Added
@@ -60,7 +83,8 @@ While the major version is 0, bump the minor version for new features or breakin
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...HEAD
+[0.2.0-beta.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...v0.2.0-beta.2
 [0.2.0-beta.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0-beta.1
 [0.1.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.0...v0.1.1
