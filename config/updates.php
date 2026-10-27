@@ -59,6 +59,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Updater
+    |--------------------------------------------------------------------------
+    |
+    | Updates run as a list of resumable steps. Each request (web) or loop
+    | (CLI) works on one step for at most step_budget_seconds, so updates fit
+    | hosts with a 30-second PHP limit.
+    |
+    */
+
+    'step_budget_seconds' => 15,
+
+    'download_chunk_bytes' => 4 * 1024 * 1024,
+
+    'extract_batch' => 400,
+
+    'backup_rows_per_query' => 1000,
+
+    'keep_backups' => 3,
+
+    // Not served over HTTP: storage lives outside the web root in every layout.
+    'work_path' => storage_path('app/updates'),
+
+    'backup_path' => storage_path('app/backups'),
+
+    'log_path' => storage_path('logs/updates'),
+
+    'lock_path' => storage_path('framework/updater.lock'),
+
+    // Tables kept out of backups so a restore never rewinds the update history.
+    'backup_exclude' => ['update_runs', 'update_steps'],
+
+    // Database connection to back up and restore (null: the default connection).
+    'backup_connection' => null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Licence-Gated Downloads
     |--------------------------------------------------------------------------
     |

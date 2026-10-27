@@ -3,7 +3,10 @@
 use App\Install\InstallerService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Testing\TestResponse;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 /*
@@ -127,6 +130,49 @@ function completeWizard(array $finish = []): TestResponse
 }
 
 /**
+ * A Super Admin with confirmed two-factor authentication (password "password").
+ *
+ * @return array{user: User, secret: string}
+ */
+function superAdminWithTwoFactor(): array
+{
+    $secret = (new Google2FA)->generateSecretKey();
+    $user = User::factory()->superAdmin()->create();
+    $user->forceFill([
+        'two_factor_secret' => encrypt($secret),
+        'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code'])),
+        'two_factor_confirmed_at' => now(),
+    ])->save();
+
+    return ['user' => $user, 'secret' => $secret];
+}
+
+function currentOtp(string $secret): string
+{
+    return (new Google2FA)->getCurrentOtp($secret);
+}
+
+/**
+ * A separate, empty MySQL database for tests that run DDL (backup restores),
+ * which would otherwise commit the RefreshDatabase transaction. Returns the
+ * connection name.
+ */
+function scratchConnection(): string
+{
+    $mysql = config('database.connections.mysql');
+    $database = $mysql['database'].'_scratch';
+
+    $pdo = new PDO("mysql:host={$mysql['host']};port={$mysql['port']}", $mysql['username'], (string) $mysql['password']);
+    $pdo->exec("DROP DATABASE IF EXISTS `{$database}`");
+    $pdo->exec("CREATE DATABASE `{$database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+    config(['database.connections.scratch' => [...$mysql, 'database' => $database]]);
+    DB::purge('scratch');
+
+    return 'scratch';
+}
+
+/**
  * Point the app's .env at a throwaway copy of .env.example so installer
  * tests never touch the real one. Returns the directory.
  */
@@ -137,6 +183,7 @@ function useTemporaryEnvironmentFile(): string
     $example = (string) file_get_contents(base_path('.env.example'));
     file_put_contents($dir.'/.env', preg_replace('/^APP_KEY=.*$/m', 'APP_KEY='.config('app.key'), $example));
     app()->useEnvironmentPath($dir);
+    test()->beforeApplicationDestroyed(fn () => File::deleteDirectory($dir));
 
     return $dir;
 }

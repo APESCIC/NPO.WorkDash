@@ -99,9 +99,22 @@ final class EnvironmentFile
         $path = $this->path();
         $temp = $path.'.'.bin2hex(random_bytes(4)).'.tmp';
 
-        if (@file_put_contents($temp, $contents) === false || ! @rename($temp, $path)) {
-            @unlink($temp);
+        if (@file_put_contents($temp, $contents) === false) {
+            throw new RuntimeException("Cannot write {$path}. Make its folder writable by PHP.");
+        }
 
+        // Windows refuses the rename while another process (often a virus scanner) has the file open.
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            if (@rename($temp, $path)) {
+                return;
+            }
+
+            usleep(100_000);
+        }
+
+        @unlink($temp);
+
+        if (@file_put_contents($path, $contents, LOCK_EX) === false) {
             throw new RuntimeException("Cannot write {$path}. Make its folder writable by PHP.");
         }
     }

@@ -39,6 +39,12 @@ class PrepareInstaller
 
         $this->avoidDatabaseDrivers();
 
+        if (! config('install.web_wizard') && ! $request->is('up')) {
+            abort_if($request->is('install', 'install/*'), 404);
+
+            return response('NPO.WorkDash is not installed yet. Install it from the terminal: php artisan app:install', 503, ['Content-Type' => 'text/plain']);
+        }
+
         if (! $request->is('install', 'install/*', 'up')) {
             return redirect('/install');
         }

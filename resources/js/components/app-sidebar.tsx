@@ -1,5 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, Server } from 'lucide-react';
+import {
+    BookOpen,
+    FolderGit2,
+    LayoutGrid,
+    RefreshCw,
+    Server,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { AppVersion } from '@/components/app-version';
 import { NavFooter } from '@/components/nav-footer';
@@ -16,6 +22,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { show as installation } from '@/routes/admin/installation';
+import { index as updates } from '@/routes/admin/updates';
 import type { Auth, NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -44,6 +51,11 @@ const superAdminNavItems: NavItem[] = [
         title: 'Installation',
         href: installation(),
         icon: Server,
+    },
+    {
+        title: 'Updates',
+        href: updates(),
+        icon: RefreshCw,
     },
 ];
 

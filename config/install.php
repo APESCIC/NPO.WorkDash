@@ -20,6 +20,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Web Wizard
+    |--------------------------------------------------------------------------
+    |
+    | Off on Cloudron, where apps are reachable as soon as they are deployed
+    | and are installed from the terminal with `php artisan app:install`.
+    |
+    */
+
+    'web_wizard' => (bool) env('INSTALL_WEB_WIZARD', ! getenv('CLOUDRON')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Guides
     |--------------------------------------------------------------------------
     |

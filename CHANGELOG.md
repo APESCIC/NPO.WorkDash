@@ -15,6 +15,44 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+## [0.2.0-beta.3] - 2026-10-27
+
+### Added
+
+- Resumable update engine. An update is an ordered list of idempotent steps stored in the database:
+  1. pre-flight
+  2. backup
+  3. download
+  4. verify
+  5. extract
+  6. maintenance on
+  7. swap
+  8. migrate
+  9. health check
+  10. maintenance off
+  11. clean up
+
+  Each request works on one step for at most 15 seconds, so updates fit a 30-second PHP limit. A killed request or closed browser resumes from the last unfinished step, a file lock stops two updates running at once, and every step is logged to `storage/logs/updates/`.
+- Pre-update backup in pure PHP: a chunked SQL dump (no `mysqldump` needed) plus a zip of `.env` and `storage/app`, stored outside the web root. The last 3 are kept.
+- Chunked, resumable release download. The SHA-256 and Ed25519 signature are checked before extraction, and zips with `../` or absolute paths are rejected. Low disk space aborts before anything changes, and extraction runs in batches into `releases/<version>` and is checked against the manifest.
+- Release swap and rollback:
+  - On shared hosting, the swap rewrites `current.php` (temp file, then rename) and copies the new web assets. It needs neither symlinks nor `exec`.
+  - On Cloudron and VPS, the swap switches the release symlink.
+  - Rollback restores the previous release and, if migrations ran, the database backup. The previous release is kept until the next successful update.
+- Super Admin updater at **Updates**:
+  - Shows the version, channel, available release, changelog, pre-flight results, live progress and history.
+  - Starting an update or a rollback needs the password and a two-factor code again.
+  - Requests are CSRF-protected and rate limited.
+  - Updates never start on their own.
+- `php artisan app:update`, with `--check` and resume support, and `php artisan app:rollback`. They use the same engine as the web updater, exit non-zero on failure and restart a long-running queue worker.
+- `/up` health check: database, cache, writable storage, scheduler heartbeat and version. It returns JSON with 200 only when every check passes, otherwise 503. The updater leaves maintenance mode only after it passes, and rolls back automatically if it fails.
+- `App\Support\TenantBackfill` processes data backfills one `tenant_id` at a time in small chunks. ADR 0006 records the expand-and-contract migration rule.
+- CI runs every migration on MySQL 8.0, MariaDB 10.6 and MariaDB 10.11 with seeded multi-tenant data, then rolls back and migrates again.
+
+### Fixed
+
+- The web install wizard is off on Cloudron, where an app is reachable as soon as it is deployed. Uninstalled Cloudron apps now explain how to install with `php artisan app:install` instead.
+
 ## [0.2.0-beta.2] - 2026-10-27
 
 ### Added
@@ -83,7 +121,8 @@ While the major version is 0, bump the minor version for new features or breakin
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.3...HEAD
+[0.2.0-beta.3]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...v0.2.0-beta.3
 [0.2.0-beta.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...v0.2.0-beta.2
 [0.2.0-beta.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0-beta.1
 [0.1.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.1...v0.1.2

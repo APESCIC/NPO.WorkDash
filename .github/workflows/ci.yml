@@ -133,6 +133,74 @@ jobs:
       - name: Pest with coverage
         run: vendor/bin/pest --coverage --colors=always
 
+  migrations:
+    name: Migrations (${{ matrix.database.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - { name: 'MySQL 8.0', image: 'mysql:8.0', ping: 'mysqladmin ping -h 127.0.0.1 -ppassword' }
+          - { name: 'MariaDB 10.6', image: 'mariadb:10.6', ping: 'healthcheck.sh --connect --innodb_initialized' }
+          - { name: 'MariaDB 10.11', image: 'mariadb:10.11', ping: 'healthcheck.sh --connect --innodb_initialized' }
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: npo_workdash
+          MARIADB_ROOT_PASSWORD: password
+          MARIADB_DATABASE: npo_workdash
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="${{ matrix.database.ping }}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: npo_workdash
+      DB_USERNAME: root
+      DB_PASSWORD: password
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Migrate with seeded multi-tenant data, roll back and migrate again
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --class='Database\Seeders\MultiTenantFixtureSeeder' --force
+          php artisan migrate:rollback --step=3 --force
+          php artisan migrate --force
+          php artisan migrate:status | tail -n 8
+          counts="$(php artisan tinker --execute='echo App\Models\Tenant::count()."/".App\Models\User::count();')"
+          echo "tenants/users after rollback and re-migrate: $counts"
+          [[ "$counts" == "3/25" ]]
+
   frontend:
     name: Frontend lint, types and build
     runs-on: ubuntu-latest

@@ -199,9 +199,9 @@ class InstallerService
 
     /**
      * Run the next pending migration only. Returns its name, or null when
-     * none are left.
+     * none are left. The updater passes the new release's migrations folder.
      */
-    public function runNextMigration(): ?string
+    public function runNextMigration(?string $path = null): ?string
     {
         $migrator = $this->migrator();
         $repository = $migrator->getRepository();
@@ -210,7 +210,7 @@ class InstallerService
             $repository->createRepository();
         }
 
-        $files = $migrator->getMigrationFiles([database_path('migrations')]);
+        $files = $migrator->getMigrationFiles([$path ?? database_path('migrations')]);
         $next = array_values(array_diff(array_keys($files), $repository->getRan()))[0] ?? null;
 
         if ($next === null) {
@@ -306,7 +306,10 @@ class InstallerService
         return Tenant::query()->forceCreate(['id' => 1, 'name' => $name, 'slug' => Str::slug($name) ?: 'workspace']);
     }
 
-    public function finish(?User $installedBy): Installation
+    /**
+     * @param  string|null  $webRoot  the folder serving the site, where updates publish web assets
+     */
+    public function finish(?User $installedBy, ?string $webRoot = null): Installation
     {
         if ($this->state->hasDatabaseRecord()) {
             throw new RuntimeException('This app is already installed.');
@@ -315,6 +318,7 @@ class InstallerService
         $installation = Installation::query()->create([
             'installation_id' => (string) Str::uuid(),
             'installed_version' => (string) config('app.version'),
+            'web_root' => $webRoot,
             'installed_by' => $installedBy?->id,
             'installed_at' => now(),
         ]);
