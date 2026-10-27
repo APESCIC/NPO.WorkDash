@@ -15,6 +15,17 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-27
+
+First stable release with install and updates: NPO.WorkDash now installs from one signed zip on shared hosting, Cloudron or a VPS, and updates itself from the browser or the command line. It includes everything from 0.2.0-beta.1, beta.2 and beta.3 below.
+
+### Added
+
+- Update emails to Super Admins: once per new release on their channel (a daily check that never installs anything), and when an update succeeds, fails or is rolled back. The emails give the from and to versions, who started the update, how long it took, the reason for any failure, and a link to the update log. Logs live in `storage/logs/updates/` and can be read from the Updates page.
+- Install and update guides in `docs/install/` for cPanel, Plesk, DirectAdmin, Cloudron and VPS, covering upload, database, web folder, cron and the first update, with troubleshooting for permissions, 500 errors and cron using the wrong PHP. The wizard links to the right guide.
+- Compatibility workflow. It installs a signed release zip and updates it to a newer one on PHP 8.3 and 8.4 against MySQL 8.0, MariaDB 10.6 and MariaDB 10.11, in the docroot, `public_html` and subdomain layouts. A restricted-PHP job repeats this with a 30-second time limit, 256 MB of memory, and `exec`, `proc_open` and `symlink` disabled.
+- `php artisan app:update --step` runs one update step and exits, the same unit of work as one web request.
+
 ## [0.2.0-beta.3] - 2026-10-27
 
 ### Added
@@ -121,7 +132,8 @@ While the major version is 0, bump the minor version for new features or breakin
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.3...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0
 [0.2.0-beta.3]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...v0.2.0-beta.3
 [0.2.0-beta.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...v0.2.0-beta.2
 [0.2.0-beta.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0-beta.1

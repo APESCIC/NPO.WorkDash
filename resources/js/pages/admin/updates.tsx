@@ -307,6 +307,14 @@ export default function Updates({
                                             {run.error}
                                         </span>
                                     )}
+                                    <a
+                                        href={run.logUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="w-fit text-xs underline"
+                                    >
+                                        Update log
+                                    </a>
                                 </li>
                             ))}
                         </ul>

@@ -8,7 +8,7 @@ Production runs on the Cloudron LAMP app with MySQL 8.0. Local development uses 
 
 AI agents (and humans) should start with [AGENTS.md](AGENTS.md): the work lifecycle from issue to deployed release, and the checks to run.
 
-Key technical decisions are recorded as [architecture decision records](docs/adr/README.md). Deployment to production (<https://npo-workdash.apes.org.uk/>) is described in the [Cloudron deployment guide](docs/deploy/cloudron.md).
+Key technical decisions are recorded as [architecture decision records](docs/adr/README.md). Deployment to production (<https://npo-workdash.apes.org.uk/>) is described in the [Cloudron deployment guide](docs/deploy/cloudron.md). To install a release on shared hosting (cPanel, Plesk, DirectAdmin), Cloudron or a VPS, and to update it, follow the [install and update guides](docs/install/README.md).
 
 ## Local setup
 

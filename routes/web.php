@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified', 'can:super-admin'])->prefix('admin')->nam
         Route::get('/', [UpdateController::class, 'index'])->name('index');
         Route::post('/', [UpdateController::class, 'start'])->name('start');
         Route::post('{run}/tick', [UpdateController::class, 'tick'])->name('tick');
+        Route::get('{run}/log', [UpdateController::class, 'log'])->name('log');
         Route::post('rollback', [UpdateController::class, 'rollback'])->name('rollback');
     });
 });

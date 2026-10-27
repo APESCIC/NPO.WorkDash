@@ -1,0 +1,179 @@
+name: Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/compat.yml
+      - deploy/release/**
+      - app/Install/**
+      - app/Updates/**
+      - app/Console/Commands/**
+      - app/Http/Middleware/**
+      - bootstrap/app.php
+      - config/**
+      - database/migrations/**
+      - routes/**
+      - composer.lock
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compat-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.3'
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: Build two signed release zips
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, sodium
+          coverage: none
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install the build tooling
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          cp .env.example .env
+          php artisan key:generate
+
+      # The newer zip is signed with a throwaway key, never the release key.
+      - name: Build this version and the next patch version
+        run: |
+          git config user.name "Compatibility CI"
+          git config user.email "ci@example.test"
+          keys="$(php -r 'require "vendor/autoload.php"; $pair = ParagonIE_Sodium_Compat::crypto_sign_keypair(); echo base64_encode(ParagonIE_Sodium_Compat::crypto_sign_secretkey($pair)), " ", base64_encode(ParagonIE_Sodium_Compat::crypto_sign_publickey($pair));')"
+          old="$(tr -d '[:space:]' < VERSION)"
+          IFS=. read -r major minor patch <<< "${old%%-*}"
+          new="$major.$minor.$((patch + 1))"
+          mkdir -p ci/server/feed/v1 "ci/server/v$new" entries
+
+          git tag -f "v$old" HEAD
+          deploy/release/build-package.sh "v$old"
+          mv "dist/npo-workdash-$old.zip" ci/install.zip
+
+          echo "$new" > VERSION
+          git commit -qam "Compatibility CI: $new"
+          git tag -f "v$new" HEAD
+          deploy/release/build-package.sh "v$new"
+          RELEASE_SIGNING_KEY="${keys% *}" php artisan release:sign "dist/npo-workdash-$new.zip"
+          php artisan release:feed-entry "dist/npo-workdash-$new.zip" dist/manifest.json "entries/$new.json"
+          php -r '$file = $argv[1]; $entry = json_decode(file_get_contents($file), true); foreach (["download_url", "signature_url"] as $key) { $entry[$key] = str_replace("https://github.com/APESCIC/NPO.WorkDash/releases/download", "http://127.0.0.1:9000", $entry[$key]); } file_put_contents($file, json_encode($entry));' "entries/$new.json"
+          php artisan release:feed entries ci/server/feed/v1
+          cp "dist/npo-workdash-$new.zip" "dist/npo-workdash-$new.zip.sig" "ci/server/v$new/"
+
+          echo "${keys#* }" > ci/public-key.txt
+          echo "$new" > ci/new-version.txt
+          echo "Built $old (install) and $new (update)"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: compat
+          path: ci/
+          if-no-files-found: error
+
+  matrix:
+    name: PHP ${{ matrix.php }}, ${{ matrix.database.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: php:${{ matrix.php }}-apache
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+        database:
+          - { name: 'MySQL 8.0', image: 'mysql:8.0', ping: 'mysqladmin ping -h 127.0.0.1 -ppassword' }
+          - { name: 'MariaDB 10.6', image: 'mariadb:10.6', ping: 'healthcheck.sh --connect --innodb_initialized' }
+          - { name: 'MariaDB 10.11', image: 'mariadb:10.11', ping: 'healthcheck.sh --connect --innodb_initialized' }
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: npo_workdash
+          MARIADB_ROOT_PASSWORD: password
+          MARIADB_DATABASE: npo_workdash
+        options: >-
+          --health-cmd="${{ matrix.database.ping }}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: compat
+          path: ci
+
+      - name: Prepare a bare PHP host
+        run: |
+          apt-get update -qq && apt-get install -y -qq unzip curl libzip-dev > /dev/null
+          docker-php-ext-install pdo_mysql zip > /dev/null
+
+      - name: Install the zip, then update it
+        env:
+          DB_HOST: database
+          DB_DATABASE: npo_workdash
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: bash deploy/release/compat-test.sh ci
+
+  restricted:
+    name: Restricted PHP (30s, 256M, no exec or symlink)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: php:8.3-apache
+    services:
+      database:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: npo_workdash
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: compat
+          path: ci
+
+      - name: Prepare a bare PHP host
+        run: |
+          apt-get update -qq && apt-get install -y -qq unzip curl libzip-dev > /dev/null
+          docker-php-ext-install pdo_mysql zip > /dev/null
+
+      - name: Install the zip, then update it one step per process
+        env:
+          DB_HOST: database
+          DB_DATABASE: npo_workdash
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: bash deploy/release/compat-test.sh ci --restricted

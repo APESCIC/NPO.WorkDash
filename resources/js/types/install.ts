@@ -35,6 +35,7 @@ export type UpdateRun = {
     finishedAt: string | null;
     durationSeconds: number | null;
     error: string | null;
+    logUrl: string;
     steps: Array<{
         position: number;
         name: string;

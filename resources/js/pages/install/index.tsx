@@ -50,6 +50,14 @@ const titles: Record<InstallStep, string> = {
     finish: 'Ready to finish',
 };
 
+const guides = [
+    { label: 'cPanel', file: 'cpanel.md' },
+    { label: 'Plesk', file: 'plesk.md' },
+    { label: 'DirectAdmin', file: 'directadmin.md' },
+    { label: 'Cloudron', file: 'cloudron.md' },
+    { label: 'VPS', file: 'vps.md' },
+];
+
 const selectClassName =
     'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
 
@@ -102,12 +110,21 @@ function Welcome({ guidesUrl }: { guidesUrl: string }) {
                         </p>
                         <p>
                             Have your database name, user and password ready
-                            (create them in your control panel first).{' '}
-                            <TextLink href={guidesUrl} target="_blank">
-                                Step-by-step guides
-                            </TextLink>{' '}
-                            cover cPanel, Plesk, DirectAdmin, Cloudron and VPS.
+                            (create them in your control panel first). The
+                            step-by-step guide for your hosting shows where:
                         </p>
+                        <ul className="flex flex-wrap gap-x-4 gap-y-1">
+                            {guides.map((guide) => (
+                                <li key={guide.file}>
+                                    <TextLink
+                                        href={`${guidesUrl}/${guide.file}`}
+                                        target="_blank"
+                                    >
+                                        {guide.label}
+                                    </TextLink>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                     <Continue processing={processing} label="Start" />
                 </>
@@ -120,16 +137,30 @@ function Checks({
     step,
     checks,
     summary,
+    guidesUrl,
 }: {
     step: 'requirements' | 'permissions';
     checks: CheckItem[];
     summary: CheckStatus;
+    guidesUrl: string;
 }) {
     return (
         <Form {...store.form(step)} className="grid gap-6">
             {({ processing, errors }) => (
                 <>
                     <CheckList checks={checks} />
+                    {summary !== 'pass' && (
+                        <p className="text-sm text-muted-foreground">
+                            Stuck on an item?{' '}
+                            <TextLink
+                                href={`${guidesUrl}/troubleshooting.md`}
+                                target="_blank"
+                            >
+                                Troubleshooting
+                            </TextLink>{' '}
+                            covers permissions, PHP settings and 500 errors.
+                        </p>
+                    )}
                     <InputError message={errors.checks} />
                     {summary === 'fail' ? (
                         <Button
@@ -609,7 +640,10 @@ function Cron({
                     <p className="text-xs text-muted-foreground">
                         If the Super Admin area later warns that cron is not
                         running, check the PHP path in this line.{' '}
-                        <TextLink href={guidesUrl} target="_blank">
+                        <TextLink
+                            href={`${guidesUrl}/troubleshooting.md#cron-uses-the-wrong-php`}
+                            target="_blank"
+                        >
                             Troubleshooting
                         </TextLink>
                     </p>
@@ -672,6 +706,7 @@ function StepBody(props: Props) {
                     step={step}
                     checks={props.checks ?? []}
                     summary={props.summary ?? 'pass'}
+                    guidesUrl={props.guidesUrl}
                 />
             );
         case 'database':
