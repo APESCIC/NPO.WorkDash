@@ -17,3 +17,13 @@ test('demo user is seeded in the local environment', function () {
 
     expect(User::where('email', DemoSeeder::DEMO_EMAIL)->exists())->toBeTrue();
 });
+
+test('seeded users only use the reserved example.test domain', function () {
+    $this->app['env'] = 'local';
+
+    $this->seed(DatabaseSeeder::class);
+
+    expect(User::pluck('email'))
+        ->not->toBeEmpty()
+        ->each->toEndWith('@example.test');
+});
