@@ -115,7 +115,7 @@ The defaults target production. Set `CLOUDRON_APP` (app ID or location) and `DEP
    6. runs `queue:restart` and leaves maintenance mode
    7. prunes old releases
 4. **Restart the app** from the Cloudron dashboard, so PHP's opcache serves the new code and `run.sh` re-caches config.
-5. **Check it**: open the site, log in, and look at the app's Logs for `Starting queue worker`, `Starting scheduler` and a `Scheduler heartbeat` line each minute.
+5. **Check it**: open the site, log in, and look at the app's Logs for `Starting queue worker`, `Starting scheduler` and a `Running ['artisan' app:heartbeat] ... DONE` line each minute.
 
 If a staging app exists, deploy to staging, check it, then repeat the same archive on production.
 
@@ -141,7 +141,10 @@ Then restart the app. `rollback.sh` only switches code. It does **not** undo dat
 - `queue:work --sleep=3 --tries=3 --max-time=3600` restarts within 5 seconds whenever it exits: hourly (`--max-time`), after `queue:restart` during a deploy, on a crash, or if the process is killed.
 - `schedule:work` runs the Laravel scheduler every minute. The `app:heartbeat` command is scheduled every minute and logs `Scheduler heartbeat`.
 
-Logs from both, and from the app itself (`LOG_CHANNEL=stderr`), appear in the app's Logs view in the Cloudron dashboard.
+Where logs go (with the `LOG_STACK=daily,stderr` setting from the env template):
+
+- **Cloudron dashboard, Logs**: Apache, `run.sh` messages, the scheduler's `Running [...] DONE` lines, and application logs from web requests and the queue worker.
+- **`/app/data/shared/storage/logs/laravel-YYYY-MM-DD.log`** (kept 14 days): everything above **plus logs from scheduled commands**. The scheduler discards a scheduled command's own output and stderr, so the `Scheduler heartbeat` line only appears in this file.
 
 ## Acceptance checklist
 
@@ -151,9 +154,22 @@ Run this after the first deploy to an app (staging first, if there is one), and 
 - [ ] Registering and logging in works, and the verification email arrives.
 - [ ] `php8.3 /app/data/workdash/artisan about` shows the expected environment, PHP 8.3 and the MySQL connection. `/app/data/shared/.env` contains no `DB_*` credentials.
 - [ ] **Queue**: `gosu www-data php8.3 /app/data/workdash/artisan app:queue-check`, then within a few seconds the Logs show `Queue heartbeat processed`.
-- [ ] **Scheduler**: the Logs show `Scheduler heartbeat` once a minute.
+- [ ] **Scheduler**: the Logs show `Running ['artisan' app:heartbeat] ... DONE` once a minute, and `grep "Scheduler heartbeat" /app/data/shared/storage/logs/laravel-*.log` shows matching entries.
 - [ ] **Worker restart**: `pkill -f "artisan queue:work"`. Within about 5 seconds the Logs show `queue worker exited ... restarting` and then `Starting queue worker`, and `app:queue-check` still gets processed.
 - [ ] **Rollback**: after a second deploy, `rollback.sh` switches back and the site still works.
+
+## How the scripts were tested
+
+Before the first real Cloudron deploy, the archive and scripts were exercised in Docker, using a `php:8.3-cli` container with `gosu` and the `CLOUDRON_MYSQL_*` variables pointing at a `mysql:8.0` container:
+
+- The first deploy ran the migrations using only the Cloudron variables.
+- `app:queue-check` was processed.
+- A killed worker was restarted within 5 seconds and processed the next job.
+- The scheduler ran `app:heartbeat` at the minute boundary.
+- `/`, `/login` and `/up` returned 200 behind `X-Forwarded-Proto: https`, with `https://` asset URLs.
+- A second deploy followed by `rollback.sh` restored the first release.
+
+Apache, the LAMP image's startup sequence and the real addons still need the acceptance checklist above.
 
 ## Troubleshooting
 
