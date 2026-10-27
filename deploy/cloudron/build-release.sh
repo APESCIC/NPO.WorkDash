@@ -27,6 +27,15 @@ echo "$sha" > "$work/REVISION"
 
 cd "$work"
 
+# Git Bash on Windows cannot run the composer.bat wrapper, so fall back to the phar.
+composer() {
+    if type -P composer > /dev/null; then
+        command composer "$@"
+    else
+        php "$(type -P composer.phar)" "$@"
+    fi
+}
+
 # --no-scripts: package discovery runs on the server during deploy.
 composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress --no-scripts
 
@@ -39,6 +48,10 @@ npm run build
 rm -rf node_modules .env bootstrap/cache/*.php public/hot
 
 mkdir -p "$root/dist"
-tar -czf "$root/dist/$name.tar.gz" -C "$work" .
+# A relative output path, because GNU tar reads "C:/..." (Git Bash) as a remote host.
+cd "$root/dist"
+# List top-level entries explicitly so member names have no "./" prefix.
+# shellcheck disable=SC2046
+tar -czf "$name.tar.gz" -C "$work" $(cd "$work" && ls -A)
 
 echo "Created dist/$name.tar.gz"
