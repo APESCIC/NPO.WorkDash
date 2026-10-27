@@ -92,12 +92,14 @@ Work is not done until it is **committed, merged, released and deployed**:
 3. **PR**: `gh pr create --base main --milestone "<milestone>"` using the [PR template](.github/pull_request_template.md), with `Closes #<issue>`.
 4. **CI green**: `gh pr checks <pr> --watch`. Fix failures; do not merge red.
 5. **Merge**: `gh pr merge <pr> --squash --delete-branch`, then `git checkout main; git pull --ff-only`.
-6. **Release**: tag the merge commit and publish the changelog section:
+6. **Release**: tag the merge commit. The [Release workflow](.github/workflows/release.yml) builds the signed zip, creates the GitHub release with the CHANGELOG section as notes (a pre-release for `-beta.N` tags) and refreshes the update feeds. Wait for it to pass:
 
    ```powershell
    git tag -a vX.Y.Z -m "vX.Y.Z" <merge-sha>; git push origin vX.Y.Z
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes "<the CHANGELOG section>"
+   gh run watch (gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
    ```
+
+   Details and signing-key handling: [docs/security/release-signing.md](docs/security/release-signing.md).
 
 7. **Deploy** to Cloudron (below) and verify.
 8. **Close out**: confirm the issue closed (or close it with a comment linking the PR and release), close parents only when all children are done, and check the milestone's progress.

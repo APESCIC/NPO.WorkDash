@@ -8,12 +8,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 1. Move the entries under **Unreleased** into a new `## [X.Y.Z] - YYYY-MM-DD` section, grouped as Added, Changed, Deprecated, Removed, Fixed or Security.
 2. Set `VERSION` to the same `X.Y.Z`. CI fails if `VERSION` is not valid semver.
-3. Merge to `main`, then tag the merge commit `vX.Y.Z` and create a GitHub release with the changelog section as its notes.
+3. Merge to `main`, then tag the merge commit `vX.Y.Z`. The Release workflow builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
 4. Deploy the tag to staging, then production (see the deployment guide).
 
 While the major version is 0, bump the minor version for new features or breaking changes and the patch version for fixes.
 
 ## [Unreleased]
+
+## [0.2.0-beta.1] - 2026-10-27
+
+### Added
+
+- Release workflow: every `vX.Y.Z` tag builds `npo-workdash-X.Y.Z.zip` with `vendor/` and `public/build` included (no `.env`, tests, `node_modules` or dev tooling). It fails if `VERSION` does not match the tag, and installs the zip on a plain PHP container without Composer or Node and loads `/login` before publishing.
+- Release manifest (`manifest.json`) with version, channel, release date, minimum PHP, MySQL 8.0 and MariaDB 10.6, required extensions, minimum version to update from, migration list and a SHA-256 per file. The zip is published with a `.sha256` checksum and an Ed25519 `.sig` signature, and `php artisan release:verify` checks both against the release key.
+- Stable and beta update feeds on GitHub Pages (`feed/v1/stable.json` and `beta.json`), validated against a versioned JSON schema. Pre-release tags (`-beta.N`) appear only in the beta feed and are published as GitHub pre-releases.
+- Licence-gated update downloads, built and switched off: with `UPDATES_LICENCE_REQUIRED=true`, the app's `/updates/feed/{channel}` endpoint withholds download links from installations without a valid licence key. Installations send their licence key and installation ID with feed requests.
+- Release signing and key rotation guide in `docs/security/release-signing.md`.
+
+### Changed
+
+- Releases are published by the Release workflow instead of `gh release create`. `build-release.sh` and the release zip share `deploy/release/stage.sh`.
 
 ## [0.1.2] - 2026-10-27
 
@@ -46,7 +60,8 @@ While the major version is 0, bump the minor version for new features or breakin
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...HEAD
+[0.2.0-beta.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0-beta.1
 [0.1.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/APESCIC/NPO.WorkDash/releases/tag/v0.1.0

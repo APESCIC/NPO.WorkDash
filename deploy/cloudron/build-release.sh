@@ -23,30 +23,7 @@ trap 'rm -rf "$work"' EXIT
 
 echo "Building $name from $ref"
 
-git -C "$root" archive --format=tar "$ref" | tar -x -C "$work"
-echo "$sha" > "$work/REVISION"
-
-cd "$work"
-
-# Git Bash on Windows cannot run the composer.bat wrapper, so fall back to the phar.
-composer() {
-    if type -P composer > /dev/null; then
-        command composer "$@"
-    else
-        php "$(type -P composer.phar)" "$@"
-    fi
-}
-
-# --no-scripts: package discovery runs on the server during deploy.
-composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress --no-scripts
-
-# The Wayfinder Vite plugin calls artisan, which needs an .env to boot.
-cp .env.example .env
-php artisan key:generate --no-interaction > /dev/null
-npm ci --no-audit --no-fund
-npm run build
-
-rm -rf node_modules .env bootstrap/cache/*.php public/hot
+"$root/deploy/release/stage.sh" "$ref" "$work"
 
 mkdir -p "$root/dist"
 # A relative output path, because GNU tar reads "C:/..." (Git Bash) as a remote host.

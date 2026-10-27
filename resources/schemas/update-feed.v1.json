@@ -1,0 +1,66 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "title": "NPO.WorkDash update feed, schema version 1",
+    "type": "object",
+    "required": ["schema", "channel", "generated_at", "releases"],
+    "additionalProperties": false,
+    "properties": {
+        "schema": { "const": 1 },
+        "channel": { "enum": ["stable", "beta"] },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "licence": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+                "status": { "enum": ["valid", "missing", "invalid", "expired"] }
+            }
+        },
+        "releases": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/release" }
+        }
+    },
+    "definitions": {
+        "release": {
+            "type": "object",
+            "required": [
+                "version",
+                "channel",
+                "released_at",
+                "changelog",
+                "size",
+                "sha256",
+                "requirements",
+                "min_update_from"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+                },
+                "channel": { "enum": ["stable", "beta"] },
+                "released_at": { "type": "string", "format": "date-time" },
+                "changelog": { "type": "string" },
+                "size": { "type": "integer", "minimum": 1 },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "download_url": { "type": "string", "format": "uri" },
+                "signature_url": { "type": "string", "format": "uri" },
+                "requirements": {
+                    "type": "object",
+                    "required": ["php", "mysql", "mariadb", "extensions"],
+                    "properties": {
+                        "php": { "type": "string" },
+                        "mysql": { "type": "string" },
+                        "mariadb": { "type": "string" },
+                        "extensions": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    }
+                },
+                "min_update_from": { "type": "string" }
+            }
+        }
+    }
+}
