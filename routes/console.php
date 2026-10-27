@@ -9,3 +9,9 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('app:heartbeat')->everyMinute()->withoutOverlapping();
+
+if (config('queue.runner') === 'cron') {
+    Schedule::command('queue:work', ['--stop-when-empty', '--max-time=50', '--tries=3'])
+        ->everyMinute()
+        ->withoutOverlapping();
+}

@@ -88,7 +88,15 @@ The defaults target production. Set `CLOUDRON_APP` (app ID or location) and `DEP
    - Generate an `APP_KEY` with `php8.3 -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"` and paste it in. **Store a copy of each app's key in the password manager**: without it, encrypted data cannot be recovered from a backup.
    - Staging uses Stripe test-mode keys and production uses live keys, once billing exists (M7).
 6. **Deploy** the uploaded release (see below), then **restart the app** so Apache picks up `app.conf` and `run.sh` starts the worker and scheduler.
-7. **Clear out the LAMP placeholder**: the default `/app/data/public/` directory is no longer served and can be deleted.
+7. **Install** on the blank database with the same installer the web wizard uses. It reads the MySQL addon's `CLOUDRON_MYSQL_*` variables and `CLOUDRON_APP_ORIGIN`, and prompts for the Super Admin and first workspace:
+
+   ```bash
+   gosu www-data php8.3 /app/data/workdash/artisan app:install
+   gosu www-data php8.3 /app/data/workdash/artisan config:cache
+   ```
+
+   A database that already had users before v0.2.0 (production) is marked as installed by a migration instead. Promote an existing account with `gosu www-data php8.3 /app/data/workdash/artisan app:super-admin <email>`. Super Admins must set up two-factor authentication at their next sign-in.
+8. **Clear out the LAMP placeholder**: the default `/app/data/public/` directory is no longer served and can be deleted.
 
 ## Deploying a release
 
@@ -143,7 +151,9 @@ The LAMP image's `start.sh` **sources** `run.sh` rather than executing it, while
 The two loops:
 
 - `queue:work --sleep=3 --tries=3 --max-time=3600` restarts within 5 seconds whenever it exits: hourly (`--max-time`), after `queue:restart` during a deploy, on a crash, or if the process is killed.
-- `schedule:work` runs the Laravel scheduler every minute. The `app:heartbeat` command is scheduled every minute and logs `Scheduler heartbeat`.
+- `schedule:work` runs the Laravel scheduler every minute. The `app:heartbeat` command is scheduled every minute, logs `Scheduler heartbeat` and records the time, so Super Admins see a warning if it stops for 10 minutes.
+
+On shared hosting the per-minute cron also drains the queue (`QUEUE_RUNNER=cron`). Cloudron sets `CLOUDRON=1`, which makes `QUEUE_RUNNER` default to `worker`, so the scheduler never starts a second worker alongside this one.
 
 Where logs go (with the `LOG_STACK=daily,stderr` setting from the env template):
 

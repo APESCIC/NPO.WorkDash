@@ -10,7 +10,9 @@ on:
       - .github/workflows/release.yml
       - deploy/release/**
       - app/Updates/**
+      - app/Install/**
       - app/Console/Commands/Release/**
+      - bootstrap/app.php
       - resources/schemas/**
 
 permissions:
@@ -79,10 +81,13 @@ jobs:
         run: |
           zip="dist/npo-workdash-${{ steps.version.outputs.version }}.zip"
           unzip -Z1 "$zip" > contents.txt
-          for required in npo-workdash/vendor/autoload.php npo-workdash/public/build/manifest.json npo-workdash/manifest.json npo-workdash/artisan; do
+          app="npo-workdash/releases/${{ steps.version.outputs.version }}"
+          for required in "$app/vendor/autoload.php" "$app/public/build/manifest.json" "$app/manifest.json" "$app/artisan" \
+            npo-workdash/current.php npo-workdash/artisan npo-workdash/public/index.php npo-workdash/public/check.php \
+            npo-workdash/public/build/manifest.json npo-workdash/shared/storage/logs/.gitkeep; do
             grep -qx "$required" contents.txt || { echo "::error::$required is missing from the zip"; exit 1; }
           done
-          if grep -E '^npo-workdash/(\.env$|tests/|node_modules/|\.github/|resources/js/)' contents.txt; then
+          if grep -E '(^|/)(\.env$|tests/|node_modules/|\.github/|resources/js/)' contents.txt | grep -v '^npo-workdash/releases/[^/]*/vendor/'; then
             echo "::error::The zip contains files that must not ship"
             exit 1
           fi
@@ -121,11 +126,11 @@ jobs:
           if-no-files-found: error
 
   smoke:
-    name: Install the zip without Composer or Node
+    name: Install the zip on Apache without Composer or Node
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    container: php:8.3-cli
+    container: php:8.3-apache
     services:
       mysql:
         image: mysql:8.0
@@ -138,6 +143,8 @@ jobs:
           --health-timeout=5s
           --health-retries=10
     steps:
+      - uses: actions/checkout@v7
+
       - uses: actions/download-artifact@v8
         with:
           name: release
@@ -145,41 +152,16 @@ jobs:
 
       - name: Prepare a bare PHP host
         run: |
-          apt-get update -qq && apt-get install -y -qq unzip curl > /dev/null
-          docker-php-ext-install pdo_mysql > /dev/null
-          if command -v composer || command -v node || command -v npm; then
-            echo "::error::This host must not have Composer or Node"
-            exit 1
-          fi
+          apt-get update -qq && apt-get install -y -qq unzip curl libzip-dev > /dev/null
+          docker-php-ext-install pdo_mysql zip > /dev/null
 
-      - name: Unzip and install
-        working-directory: dist
-        run: |
-          unzip -q "npo-workdash-${{ needs.build.outputs.version }}.zip"
-          cd npo-workdash
-          cp .env.example .env
-          sed -i \
-            -e 's/^APP_ENV=.*/APP_ENV=production/' \
-            -e 's/^APP_DEBUG=.*/APP_DEBUG=false/' \
-            -e 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|' \
-            -e 's/^DB_HOST=.*/DB_HOST=mysql/' \
-            -e 's/^DB_PASSWORD=.*/DB_PASSWORD=password/' \
-            .env
-          php artisan key:generate --force
-          php artisan migrate --force
-
-      - name: Load the login page
-        working-directory: dist/npo-workdash
-        run: |
-          php artisan serve --host=127.0.0.1 --port=8000 > serve.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
-          status="$(curl -s -o login.html -w '%{http_code}' http://127.0.0.1:8000/login)"
-          if [[ "$status" != 200 ]] || ! grep -q 'build/assets/' login.html; then
-            echo "::error::/login returned $status"
-            cat serve.log storage/logs/*.log 2> /dev/null || true
-            exit 1
-          fi
-          echo "/login returned 200 with built assets"
+      - name: Install and check the docroot, public_html and subdomain layouts
+        env:
+          DB_HOST: mysql
+          DB_DATABASE: npo_workdash
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: bash deploy/release/smoke-test.sh "dist/npo-workdash-${{ needs.build.outputs.version }}.zip"
 
   publish:
     name: Publish the GitHub release

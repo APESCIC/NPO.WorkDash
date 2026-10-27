@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Queue Runner
+    |--------------------------------------------------------------------------
+    |
+    | "cron": the per-minute scheduler drains the queue (shared hosting, where
+    | nothing can run permanently). "worker": a long-running queue:work is
+    | supervised elsewhere, as run.sh does on Cloudron, so the scheduler must
+    | not start a second one.
+    |
+    */
+
+    'runner' => env('QUEUE_RUNNER', getenv('CLOUDRON') ? 'worker' : 'cron'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------
     |

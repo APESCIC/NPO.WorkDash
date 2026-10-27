@@ -1,49 +1,5 @@
 <?php
 
-/**
- * Run a callback with environment variables temporarily set (string) or
- * removed (null), restoring the original values afterwards.
- *
- * @param  array<string, string|null>  $variables
- */
-function withEnvironment(array $variables, callable $callback): mixed
-{
-    $original = [];
-
-    foreach ($variables as $key => $value) {
-        $original[$key] = [$_ENV[$key] ?? null, $_SERVER[$key] ?? null, getenv($key)];
-
-        if ($value === null) {
-            unset($_ENV[$key], $_SERVER[$key]);
-            putenv($key);
-        } else {
-            $_ENV[$key] = $_SERVER[$key] = $value;
-            putenv("{$key}={$value}");
-        }
-    }
-
-    try {
-        return $callback();
-    } finally {
-        foreach ($original as $key => [$env, $server, $getenv]) {
-            unset($_ENV[$key], $_SERVER[$key]);
-            putenv($key);
-
-            if ($env !== null) {
-                $_ENV[$key] = $env;
-            }
-
-            if ($server !== null) {
-                $_SERVER[$key] = $server;
-            }
-
-            if ($getenv !== false) {
-                putenv("{$key}={$getenv}");
-            }
-        }
-    }
-}
-
 test('.env.example documents every environment variable used in config', function () {
     $documented = collect(file(base_path('.env.example')))
         ->map(fn (string $line) => preg_match('/^\s*#?\s*([A-Z][A-Z0-9_]*)=/', $line, $m) ? $m[1] : null)
@@ -58,7 +14,7 @@ test('.env.example documents every environment variable used in config', functio
         })
         ->unique()
         // Provided by the Cloudron platform, never set by hand.
-        ->reject(fn (string $key) => str_starts_with($key, 'CLOUDRON_'));
+        ->reject(fn (string $key) => $key === 'CLOUDRON' || str_starts_with($key, 'CLOUDRON_'));
 
     expect($used->diff($documented)->values()->all())->toBe([]);
 });

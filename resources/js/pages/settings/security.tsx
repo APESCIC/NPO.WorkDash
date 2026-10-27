@@ -1,6 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head } from '@inertiajs/react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useRef, useState } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
@@ -8,6 +8,7 @@ import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
@@ -21,6 +22,7 @@ type Props = {
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
+    twoFactorRequired?: boolean;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -34,6 +36,7 @@ export default function Security({
     canManageTwoFactor = false,
     requiresConfirmation = false,
     twoFactorEnabled = false,
+    twoFactorRequired = false,
 }: Props) {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
@@ -57,6 +60,20 @@ export default function Security({
             <h1 className="sr-only">Security settings</h1>
 
             <SettingsLayout>
+                {twoFactorRequired && (
+                    <Alert data-test="two-factor-required">
+                        <ShieldAlert />
+                        <AlertTitle>
+                            Set up two-factor authentication to continue
+                        </AlertTitle>
+                        <AlertDescription>
+                            Super Admins can change every workspace, so their
+                            accounts must use two-factor authentication. Enable
+                            it below to unlock the rest of the app.
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <div className="space-y-6">
                     <Heading
                         variant="small"
