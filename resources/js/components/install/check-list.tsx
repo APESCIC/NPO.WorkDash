@@ -54,6 +54,7 @@ export function CheckList({ checks }: { checks: CheckItem[] }) {
                             {check.detail}
                         </span>
                         {check.status !== 'pass' &&
+                            check.hints &&
                             Object.keys(check.hints).length > 0 && (
                                 <dl className="mt-1 grid gap-1 text-xs">
                                     {(
@@ -62,13 +63,13 @@ export function CheckList({ checks }: { checks: CheckItem[] }) {
                                         >
                                     ).map(
                                         (panel) =>
-                                            check.hints[panel] && (
+                                            check.hints?.[panel] && (
                                                 <div key={panel}>
                                                     <dt className="inline font-medium">
                                                         {panels[panel]}:{' '}
                                                     </dt>
                                                     <dd className="inline text-muted-foreground">
-                                                        {check.hints[panel]}
+                                                        {check.hints?.[panel]}
                                                     </dd>
                                                 </div>
                                             ),

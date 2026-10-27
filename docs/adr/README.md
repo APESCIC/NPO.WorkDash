@@ -11,6 +11,7 @@ Significant technical decisions for NPO.WorkDash are recorded here as ADRs. Each
 | [0003](0003-billing.md) | Subscription billing provider: Stripe Billing | Accepted |
 | [0004](0004-hosting.md) | Hosting: Cloudron LAMP app | Accepted |
 | [0005](0005-clean-room.md) | Clean-room build with no WorkDo code | Accepted |
+| [0006](0006-migrations.md) | Database migrations: expand and contract, one at a time | Accepted |
 
 ## Statuses
 

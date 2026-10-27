@@ -15,7 +15,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Cloudron terminates TLS at its nginx proxy; only that proxy can reach the app container.
@@ -23,7 +22,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         $middleware->prepend(PrepareInstaller::class);
 
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        // laravel_maintenance is read before cookies are decrypted (the updater's bypass cookie).
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'laravel_maintenance']);
 
         $middleware->web(append: [
             HandleAppearance::class,

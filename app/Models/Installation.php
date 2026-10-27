@@ -21,7 +21,7 @@ class Installation extends Model
     /** @use HasFactory<InstallationFactory> */
     use HasFactory;
 
-    protected $fillable = ['installation_id', 'installed_version', 'installed_by', 'installed_at'];
+    protected $fillable = ['installation_id', 'installed_version', 'web_root', 'installed_by', 'installed_at'];
 
     protected function casts(): array
     {

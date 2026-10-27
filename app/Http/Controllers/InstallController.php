@@ -205,7 +205,7 @@ class InstallController extends Controller
     private function finish(Request $request): Response
     {
         $adminId = $this->installer->progress()['data']['admin_id'] ?? null;
-        $this->installer->finish(User::query()->find($adminId));
+        $this->installer->finish(User::query()->find($adminId), public_path());
 
         if ($request->boolean('remove_installer_files')) {
             $this->installer->removeInstallerFiles();

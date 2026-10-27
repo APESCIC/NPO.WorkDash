@@ -88,7 +88,7 @@ The defaults target production. Set `CLOUDRON_APP` (app ID or location) and `DEP
    - Generate an `APP_KEY` with `php8.3 -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"` and paste it in. **Store a copy of each app's key in the password manager**: without it, encrypted data cannot be recovered from a backup.
    - Staging uses Stripe test-mode keys and production uses live keys, once billing exists (M7).
 6. **Deploy** the uploaded release (see below), then **restart the app** so Apache picks up `app.conf` and `run.sh` starts the worker and scheduler.
-7. **Install** on the blank database with the same installer the web wizard uses. It reads the MySQL addon's `CLOUDRON_MYSQL_*` variables and `CLOUDRON_APP_ORIGIN`, and prompts for the Super Admin and first workspace:
+7. **Install straight after the first deploy**: until then every page shows a "not installed" notice (the web wizard is switched off on Cloudron). Install on the blank database with the same installer the web wizard uses. It reads the MySQL addon's `CLOUDRON_MYSQL_*` variables and `CLOUDRON_APP_ORIGIN`, and prompts for the Super Admin and first workspace:
 
    ```bash
    gosu www-data php8.3 /app/data/workdash/artisan app:install
@@ -128,6 +128,20 @@ The defaults target production. Set `CLOUDRON_APP` (app ID or location) and `DEP
 If a staging app exists, deploy to staging, check it, then repeat the same archive on production.
 
 If `deploy.sh` stops partway (for example a failing migration), the live symlink has not moved, but the site is still in maintenance mode. Fix the problem and re-run the deploy, or bring the old release back up with `php8.3 /app/data/workdash/artisan up`.
+
+### Updating from the Web Terminal
+
+The built-in updater also works on Cloudron. It switches the `workdash` symlink, just as `deploy.sh` does, after a backup, a signature check and migrations run one at a time:
+
+```bash
+gosu www-data php8.3 /app/data/workdash/artisan app:update --check   # what is available, plus pre-flight checks
+gosu www-data php8.3 /app/data/workdash/artisan app:update           # install it
+gosu www-data php8.3 /app/data/workdash/artisan app:rollback         # undo the last update
+```
+
+Restart the app afterwards so `run.sh` re-caches config. `cloudron-deploy.sh` remains the normal release path for APES.
+
+`/up` returns JSON and 200 only when the database, cache, storage, scheduler heartbeat (under 10 minutes old) and version checks all pass. Otherwise it returns 503 with the failing check, so a stopped scheduler fails a deploy.
 
 ## Rolling back
 

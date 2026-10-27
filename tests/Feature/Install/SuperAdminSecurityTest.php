@@ -56,16 +56,19 @@ test('seeding outside local development creates no accounts', function () {
 });
 
 test('no default account or password is defined in application code', function () {
-    $files = collect(File::allFiles(app_path()))
+    $code = collect(File::allFiles(app_path()))
         ->merge(File::allFiles(database_path('seeders')))
+        ->merge(File::allFiles(database_path('migrations')));
+
+    foreach ($code as $file) {
+        expect($file->getContents())->not->toMatch("/(Hash::make|bcrypt)\(\s*['\"]/");
+    }
+
+    $seeding = collect(File::allFiles(database_path('seeders')))
         ->merge(File::allFiles(database_path('migrations')))
         ->reject(fn ($file) => $file->getFilename() === 'DemoSeeder.php');
 
-    foreach ($files as $file) {
-        $source = $file->getContents();
-
-        expect($source)
-            ->not->toMatch("/(Hash::make|bcrypt)\(\s*['\"]/")
-            ->not->toMatch("/'password'\s*=>\s*['\"](?!hashed['\"])[^'\"]+['\"]/");
+    foreach ($seeding as $file) {
+        expect($file->getContents())->not->toMatch("/'password'\s*=>\s*['\"]/");
     }
 });

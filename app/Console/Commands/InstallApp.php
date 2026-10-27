@@ -33,6 +33,7 @@ class InstallApp extends Command
         {--admin-email= : Super Admin email}
         {--admin-password= : Super Admin password (prompted when omitted; at least 12 characters)}
         {--workspace= : Name of the first workspace}
+        {--web-root= : Folder that serves the site, if it is not npo-workdash/public (for example ~/public_html)}
         {--skip-requirements : Install even if a requirement fails}';
 
     protected $description = 'Install NPO.WorkDash on a blank database (same steps as the web install wizard)';
@@ -94,7 +95,7 @@ class InstallApp extends Command
 
             $user = $installer->createSuperAdmin($admin['name'], $admin['email'], $admin['password']);
             $installer->createWorkspace((string) ($this->option('workspace') ?: text('Name of the first workspace (your charity)', required: true)));
-            $installer->finish($user);
+            $installer->finish($user, $this->option('web-root') ? (string) $this->option('web-root') : null);
         } catch (Throwable $e) {
             $this->error($e->getMessage());
 
