@@ -60,7 +60,7 @@ php artisan key:generate
 php artisan migrate:fresh --seed
 ```
 
-`.env.example` is already set up for Laragon: `APP_URL=http://npo-workdash.test`, MySQL on `127.0.0.1:3306` as `root`, and mail sent over SMTP to Mailpit on `127.0.0.1:1025`.
+`.env.example` is already set up for Laragon: `APP_URL=http://npo-workdash.test`, MySQL on `127.0.0.1:3306` as `root`, and mail sent over SMTP to Mailpit on `127.0.0.1:1025`. It documents every environment variable the app reads. See [configuration and secrets](docs/security/secrets.md) for how staging, production and CI are configured, and how secrets and `APP_KEY` are handled.
 
 Seeding in the `local` environment creates a fictional demo account: `demo@example.test` / `password`. Seeders never contain real personal data: seeded email addresses must use the reserved `example.test` domain, and a test enforces this. Outside `local`, `db:seed` creates no demo accounts. Each module adds its own demo data to `DemoSeeder` as it lands (the demo Super Admin arrives with the Super Admin area in M1).
 
@@ -97,8 +97,9 @@ npm run format:check
 
 ### Continuous integration
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request to `main`, in three parallel jobs:
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request to `main`, in four parallel jobs:
 
+- **Secret scanning**: gitleaks over the full git history, configured by [`.gitleaks.toml`](.gitleaks.toml).
 - **PHP lint and static analysis**: Pint and Larastan.
 - **Pest (MySQL 8.0)**: the full suite against a MySQL 8.0 service container, with a pcov coverage summary in the log.
 - **Frontend**: Wayfinder route generation, ESLint, Prettier, `tsc` and `npm run build`.

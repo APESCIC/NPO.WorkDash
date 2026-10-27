@@ -16,8 +16,34 @@ concurrency:
 env:
   PHP_VERSION: '8.3'
   NODE_VERSION: '22'
+  GITLEAKS_VERSION: '8.30.1'
 
 jobs:
+  secret-scan:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The CLI is used directly because gitleaks-action needs a paid licence for organisation repositories.
+      - name: Install gitleaks
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$archive" "$base/$archive"
+          curl -sSfL -o checksums.txt "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " $archive\$" checksums.txt | sha256sum --check --strict
+          tar -xzf "$archive" gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          rm "$archive" checksums.txt
+
+      - name: Scan git history
+        run: gitleaks git --config .gitleaks.toml --redact --no-banner --verbose .
+
+
   php-quality:
     name: PHP lint and static analysis
     runs-on: ubuntu-latest

@@ -1,0 +1,15 @@
+title = "NPO.WorkDash secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Dependencies, build output and lockfiles"
+paths = [
+    '''(^|/)vendor/''',
+    '''(^|/)node_modules/''',
+    '''(^|/)\.vite/''',
+    '''(^|/)public/build/''',
+    '''(^|/)composer\.lock$''',
+    '''(^|/)package-lock\.json$''',
+]
