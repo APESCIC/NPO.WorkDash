@@ -123,8 +123,10 @@ The script builds the release, pushes it, runs `deploy.sh` on the app, restarts 
 Cloudron caveats:
 
 - On the app, always use `php8.3` and `gosu www-data php8.3 /app/data/workdash/artisan ...`; plain `php` is the image default and `su` drops the Cloudron environment.
-- From PowerShell, quote the separator: `cloudron exec --app <id> '--' ls /app/data`.
+- The LAMP `start.sh` **sources** `/app/data/run.sh` under `set -eu`. Keep all code inside its `( ... )` subshell, or the app crash-loops before Apache starts (recovery: `cloudron debug`, see the guide's Troubleshooting).
+- From PowerShell, quote the separator: `cloudron exec --app <id> '--' ls /app/data`. From Git Bash, prefix `cloudron` calls that take remote paths with `MSYS_NO_PATHCONV=1`.
 - Rolling back code does not roll back migrations.
+- Other agent sessions may be working in parallel (`git worktree list`, `gh pr list`). Check before deploying, and do not deploy a tag that would undo a fix still waiting to merge.
 
 ## Decisions and next steps
 

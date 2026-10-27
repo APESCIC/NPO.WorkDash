@@ -27,6 +27,12 @@ While the major version is 0, bump the minor version for new features or breakin
 
 - `build-release.sh` names the archive and `REVISION` after the commit an annotated tag points to, not the tag object.
 
+## [0.1.1] - 2026-10-27
+
+### Fixed
+
+- The Cloudron app no longer crash-loops on start. The LAMP image sources `run.sh` under `set -eu`, and `run.sh` assigned the image's readonly `php_version` variable, which stopped the start script before Apache. `run.sh` now runs in a subshell, so it cannot abort the start script, and its queue worker and scheduler loops keep restarting after a non-zero exit. The deployment guide explains this and how to recover a crash-looping app.
+
 ## [0.1.0] - 2026-10-27
 
 ### Added
