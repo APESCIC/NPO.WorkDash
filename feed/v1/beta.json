@@ -1,8 +1,41 @@
 {
     "schema": 1,
     "channel": "beta",
-    "generated_at": "2026-10-27T05:20:52+00:00",
+    "generated_at": "2026-10-27T06:10:02+00:00",
     "releases": [
+        {
+            "version": "0.2.0-beta.3",
+            "channel": "beta",
+            "released_at": "2026-10-27T06:08:29+00:00",
+            "changelog": "### Added\n\n- Resumable update engine. An update is an ordered list of idempotent steps stored in the database:\n  1. pre-flight\n  2. backup\n  3. download\n  4. verify\n  5. extract\n  6. maintenance on\n  7. swap\n  8. migrate\n  9. health check\n  10. maintenance off\n  11. clean up\n\n  Each request works on one step for at most 15 seconds, so updates fit a 30-second PHP limit. A killed request or closed browser resumes from the last unfinished step, a file lock stops two updates running at once, and every step is logged to `storage/logs/updates/`.\n- Pre-update backup in pure PHP: a chunked SQL dump (no `mysqldump` needed) plus a zip of `.env` and `storage/app`, stored outside the web root. The last 3 are kept.\n- Chunked, resumable release download. The SHA-256 and Ed25519 signature are checked before extraction, and zips with `../` or absolute paths are rejected. Low disk space aborts before anything changes, and extraction runs in batches into `releases/<version>` and is checked against the manifest.\n- Release swap and rollback:\n  - On shared hosting, the swap rewrites `current.php` (temp file, then rename) and copies the new web assets. It needs neither symlinks nor `exec`.\n  - On Cloudron and VPS, the swap switches the release symlink.\n  - Rollback restores the previous release and, if migrations ran, the database backup. The previous release is kept until the next successful update.\n- Super Admin updater at **Updates**:\n  - Shows the version, channel, available release, changelog, pre-flight results, live progress and history.\n  - Starting an update or a rollback needs the password and a two-factor code again.\n  - Requests are CSRF-protected and rate limited.\n  - Updates never start on their own.\n- `php artisan app:update`, with `--check` and resume support, and `php artisan app:rollback`. They use the same engine as the web updater, exit non-zero on failure and restart a long-running queue worker.\n- `/up` health check: database, cache, writable storage, scheduler heartbeat and version. It returns JSON with 200 only when every check passes, otherwise 503. The updater leaves maintenance mode only after it passes, and rolls back automatically if it fails.\n- `App\\Support\\TenantBackfill` processes data backfills one `tenant_id` at a time in small chunks. ADR 0006 records the expand-and-contract migration rule.\n- CI runs every migration on MySQL 8.0, MariaDB 10.6 and MariaDB 10.11 with seeded multi-tenant data, then rolls back and migrates again.\n\n### Fixed\n\n- The web install wizard is off on Cloudron, where an app is reachable as soon as it is deployed. Uninstalled Cloudron apps now explain how to install with `php artisan app:install` instead.",
+            "size": 11843478,
+            "sha256": "213c6df8940917b2a63f5b20f88a2847ff3306a4a334f87847e6e24d9a10de17",
+            "download_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.0-beta.3/npo-workdash-0.2.0-beta.3.zip",
+            "signature_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.0-beta.3/npo-workdash-0.2.0-beta.3.zip.sig",
+            "requirements": {
+                "php": "8.3.0",
+                "mysql": "8.0.0",
+                "mariadb": "10.6.0",
+                "extensions": [
+                    "ctype",
+                    "curl",
+                    "dom",
+                    "fileinfo",
+                    "filter",
+                    "hash",
+                    "mbstring",
+                    "openssl",
+                    "pcre",
+                    "pdo",
+                    "pdo_mysql",
+                    "session",
+                    "tokenizer",
+                    "xml",
+                    "zip"
+                ]
+            },
+            "min_update_from": "0.1.0"
+        },
         {
             "version": "0.2.0-beta.2",
             "channel": "beta",
