@@ -25,6 +25,8 @@ While the major version is 0, bump the minor version for new features or breakin
 - Local development with Laragon, Vite hot module replacement, Mailpit and a local-only demo seeder.
 - Architecture decision records for the stack, tenancy, billing, hosting and the clean-room build.
 - `VERSION` file and this changelog. The version is shown in the app sidebar.
+- Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
+- Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
 [Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/APESCIC/NPO.WorkDash/releases/tag/v0.1.0
