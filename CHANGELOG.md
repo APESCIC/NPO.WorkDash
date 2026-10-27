@@ -15,7 +15,7 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
-## [0.1.1] - 2026-10-27
+## [0.1.2] - 2026-10-27
 
 ### Added
 
@@ -23,9 +23,9 @@ While the major version is 0, bump the minor version for new features or breakin
 - `deploy/cloudron/cloudron-deploy.sh`: one command to build a tagged release, deploy it to the production Cloudron app with the Cloudron CLI and verify `/up` and the live revision. `--bootstrap` prepares a fresh LAMP app.
 - Pull request template and issue templates for tasks and bugs.
 
-### Changed
+### Fixed
 
-- The deployment guide explains where scheduler and application logs go, and how the scripts were tested.
+- `build-release.sh` names the archive and `REVISION` after the commit an annotated tag points to, not the tag object.
 
 ## [0.1.0] - 2026-10-27
 
@@ -40,6 +40,7 @@ While the major version is 0, bump the minor version for new features or breakin
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/APESCIC/NPO.WorkDash/releases/tag/v0.1.0
