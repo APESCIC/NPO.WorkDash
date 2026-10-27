@@ -116,7 +116,11 @@ Then restart the app. `rollback.sh` only switches code. It does **not** undo dat
 
 ## Queue worker and scheduler
 
-`run.sh` runs at container start (before Apache) and starts two supervised loops in the background, as `www-data` and with the Cloudron environment preserved:
+`run.sh` runs at container start (before Apache) and starts two supervised loops in the background, as `www-data` and with the Cloudron environment preserved.
+
+The LAMP image's `start.sh` **sources** `run.sh` rather than executing it, while running under `set -eu` with a readonly `php_version` variable. Any failing command, `exit`, or assignment to one of its readonly variables in `run.sh` would stop `start.sh` before Apache starts and leave the app crash-looping. That is why the whole script runs inside a `( ... )` subshell with `set +e`. Keep any new code inside that subshell.
+
+The two loops:
 
 - `queue:work --sleep=3 --tries=3 --max-time=3600` restarts within 5 seconds whenever it exits: hourly (`--max-time`), after `queue:restart` during a deploy, on a crash, or if the process is killed.
 - `schedule:work` runs the Laravel scheduler every minute. The `app:heartbeat` command is scheduled every minute and logs `Scheduler heartbeat`.
@@ -153,6 +157,7 @@ Apache, the LAMP image's startup sequence and the real addons still need the acc
 
 ## Troubleshooting
 
+- **App stuck on "Starting", health check `ECONNREFUSED` or `EHOSTUNREACH`**: the Logs show `Source custom startup script` but never `==> Starting LAMP stack`, so `run.sh` stopped `start.sh` (see [Queue worker and scheduler](#queue-worker-and-scheduler)). Because the container is crash-looping, `cloudron exec` will not work. Run `cloudron debug --app <id>` (the container starts without `start.sh`), fix or replace `/app/data/run.sh` with `cloudron push`, check it with `cloudron exec --app <id> -- bash -n /app/data/run.sh`, then run `cloudron debug --disable --app <id>`.
 - **`Killed` during deploy**: raise the app's memory limit (Resources) and retry.
 - **500 error after deploy**: check the app's Logs. A missing `APP_KEY` or a typo in `/app/data/shared/.env` is the usual cause. After fixing `.env`, run `gosu www-data php8.3 /app/data/workdash/artisan config:cache` and restart.
 - **Links or redirects use `http://`**: the app trusts Cloudron's proxy headers (`trustProxies` in `bootstrap/app.php`). Check that `APP_URL` is not overridden with an `http://` value.
