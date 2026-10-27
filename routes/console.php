@@ -10,6 +10,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('app:heartbeat')->everyMinute()->withoutOverlapping();
 
+// Notifies only: updates are always started by a Super Admin.
+Schedule::command('app:check-updates')->dailyAt('06:00');
+
 if (config('queue.runner') === 'cron') {
     Schedule::command('queue:work', ['--stop-when-empty', '--max-time=50', '--tries=3'])
         ->everyMinute()

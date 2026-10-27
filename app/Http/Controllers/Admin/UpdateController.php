@@ -9,6 +9,7 @@ use App\Models\UpdateStep;
 use App\Models\User;
 use App\Updates\Engine\UpdateEngine;
 use App\Updates\Engine\UpdateInProgress;
+use App\Updates\Engine\UpdateLog;
 use App\Updates\FeedClient;
 use App\Updates\InvalidRelease;
 use App\Updates\Preflight;
@@ -16,6 +17,7 @@ use App\Updates\UpdateFeed;
 use Illuminate\Foundation\Http\MaintenanceModeBypassCookie;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -81,6 +83,14 @@ class UpdateController extends Controller
         return is_string($secret) && ! $run->isFinished()
             ? $response->withCookie(MaintenanceModeBypassCookie::create($secret))
             : $response;
+    }
+
+    public function log(UpdateRun $run): HttpResponse
+    {
+        return response(UpdateLog::read($run) ?: 'No log was written for this update.', 200, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+            'X-Robots-Tag' => 'noindex',
+        ]);
     }
 
     public function rollback(Request $request): RedirectResponse
@@ -160,6 +170,7 @@ class UpdateController extends Controller
             'finishedAt' => $run->finished_at?->toIso8601String(),
             'durationSeconds' => $run->durationSeconds(),
             'error' => $run->error,
+            'logUrl' => route('admin.updates.log', $run),
             'steps' => $run->steps->map(fn (UpdateStep $step) => [
                 'position' => $step->position,
                 'name' => $step->name,

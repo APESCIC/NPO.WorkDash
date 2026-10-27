@@ -16,7 +16,8 @@ class UpdateApp extends Command
 {
     protected $signature = 'app:update
         {--check : Only show whether an update is available and run the pre-flight checks}
-        {--channel= : stable or beta (defaults to UPDATES_CHANNEL)}';
+        {--channel= : stable or beta (defaults to UPDATES_CHANNEL)}
+        {--step : Do one step of work (as one web request would) and exit; run again until it reports finished}';
 
     protected $description = 'Update NPO.WorkDash to the newest release on its channel (same engine as the web updater)';
 
@@ -76,6 +77,14 @@ class UpdateApp extends Command
 
     private function drive(UpdateEngine $engine, UpdateRun $run): int
     {
+        if ($this->option('step')) {
+            $run = $engine->tick($run);
+            $current = $run->steps()->where('status', '!=', 'done')->value('name') ?? 'none';
+            $this->line("status={$run->status} next={$current}");
+
+            return in_array($run->status, [UpdateRun::FAILED, UpdateRun::ROLLED_BACK], true) ? self::FAILURE : self::SUCCESS;
+        }
+
         $reported = [];
 
         $run = $engine->runToCompletion($run, function (UpdateRun $run) use (&$reported) {
