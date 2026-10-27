@@ -1,0 +1,278 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  # Build and smoke-test (without publishing) when release tooling changes.
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/release.yml
+      - deploy/release/**
+      - app/Updates/**
+      - app/Console/Commands/Release/**
+      - resources/schemas/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PHP_VERSION: '8.3'
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: Build, sign and describe the release zip
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check VERSION matches the tag
+        id: version
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            tag="v$version"
+            git tag -f "$tag" HEAD
+          else
+            tag="$GITHUB_REF_NAME"
+          fi
+          if [[ "v$version" != "$tag" ]]; then
+            echo "::error file=VERSION::VERSION is '$version' but the tag is '$tag'"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi >> "$GITHUB_OUTPUT"
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, sodium
+          coverage: none
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install the build tooling
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build the zip
+        run: deploy/release/build-package.sh "${{ steps.version.outputs.tag }}"
+
+      - name: Check the zip contents
+        run: |
+          zip="dist/npo-workdash-${{ steps.version.outputs.version }}.zip"
+          unzip -Z1 "$zip" > contents.txt
+          for required in npo-workdash/vendor/autoload.php npo-workdash/public/build/manifest.json npo-workdash/manifest.json npo-workdash/artisan; do
+            grep -qx "$required" contents.txt || { echo "::error::$required is missing from the zip"; exit 1; }
+          done
+          if grep -E '^npo-workdash/(\.env$|tests/|node_modules/|\.github/|resources/js/)' contents.txt; then
+            echo "::error::The zip contains files that must not ship"
+            exit 1
+          fi
+          echo "$(wc -l < contents.txt) entries"
+
+      - name: Extract the changelog section
+        run: |
+          awk -v v="${{ steps.version.outputs.version }}" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > dist/notes.md
+          if [[ ! -s dist/notes.md ]]; then
+            echo "::error file=CHANGELOG.md::No section for ${{ steps.version.outputs.version }}"
+            exit 1
+          fi
+
+      - name: Sign
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          zip="dist/npo-workdash-${{ steps.version.outputs.version }}.zip"
+          php artisan release:sign "$zip"
+          php artisan release:verify "$zip"
+
+      - name: Write the feed entry
+        run: |
+          php artisan release:feed-entry \
+            "dist/npo-workdash-${{ steps.version.outputs.version }}.zip" dist/manifest.json dist/feed-entry.json \
+            --notes=dist/notes.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: dist/
+          if-no-files-found: error
+
+  smoke:
+    name: Install the zip without Composer or Node
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: php:8.3-cli
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: npo_workdash
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: dist
+
+      - name: Prepare a bare PHP host
+        run: |
+          apt-get update -qq && apt-get install -y -qq unzip curl > /dev/null
+          docker-php-ext-install pdo_mysql > /dev/null
+          if command -v composer || command -v node || command -v npm; then
+            echo "::error::This host must not have Composer or Node"
+            exit 1
+          fi
+
+      - name: Unzip and install
+        working-directory: dist
+        run: |
+          unzip -q "npo-workdash-${{ needs.build.outputs.version }}.zip"
+          cd npo-workdash
+          cp .env.example .env
+          sed -i \
+            -e 's/^APP_ENV=.*/APP_ENV=production/' \
+            -e 's/^APP_DEBUG=.*/APP_DEBUG=false/' \
+            -e 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|' \
+            -e 's/^DB_HOST=.*/DB_HOST=mysql/' \
+            -e 's/^DB_PASSWORD=.*/DB_PASSWORD=password/' \
+            .env
+          php artisan key:generate --force
+          php artisan migrate --force
+
+      - name: Load the login page
+        working-directory: dist/npo-workdash
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
+          status="$(curl -s -o login.html -w '%{http_code}' http://127.0.0.1:8000/login)"
+          if [[ "$status" != 200 ]] || ! grep -q 'build/assets/' login.html; then
+            echo "::error::/login returned $status"
+            cat serve.log storage/logs/*.log 2> /dev/null || true
+            exit 1
+          fi
+          echo "/login returned 200 with built assets"
+
+  publish:
+    name: Publish the GitHub release
+    needs: [build, smoke]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: dist
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          assets=(dist/npo-workdash-"$VERSION".zip dist/npo-workdash-"$VERSION".zip.sha256 dist/npo-workdash-"$VERSION".zip.sig dist/manifest.json dist/feed-entry.json)
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          else
+            flags=()
+            [[ "${{ needs.build.outputs.prerelease }}" == true ]] && flags+=(--prerelease)
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --verify-tag \
+              --title "$GITHUB_REF_NAME" --notes-file dist/notes.md "${flags[@]}"
+          fi
+
+  feed:
+    name: Publish the update feeds
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: release-feed
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, sodium
+          coverage: none
+
+      - name: Install the build tooling
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Collect feed entries from every release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p entries
+          for tag in $(gh release list --limit 200 --exclude-drafts --json tagName --jq '.[].tagName'); do
+            gh release download "$tag" --pattern feed-entry.json --output "entries/$tag.json" 2> /dev/null \
+              || echo "$tag has no feed entry (released before the feed existed)"
+          done
+
+      - name: Build the feeds
+        run: |
+          php artisan release:feed entries site/feed/v1
+          mkdir -p site/schemas
+          cp resources/schemas/update-feed.v1.json site/schemas/
+          touch site/.nojekyll
+
+      - name: Push to the gh-pages branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$remote" gh-pages > /dev/null; then
+            git clone --depth 1 --branch gh-pages "$remote" pages
+          else
+            git init -b gh-pages pages
+            git -C pages remote add origin "$remote"
+          fi
+          rsync -a --delete --exclude .git site/ pages/
+          cd pages
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Feeds unchanged"
+          else
+            git commit -m "Update feeds for $GITHUB_REF_NAME"
+            git push origin gh-pages
+          fi

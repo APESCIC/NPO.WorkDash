@@ -12,11 +12,11 @@ Work is done only when it is live. Full detail: `AGENTS.md`, "Definition of done
 3. Commit, push, `gh pr create --base main` with `Closes #<issue>`.
 4. `gh pr checks <pr> --watch` until green. Never merge red.
 5. `gh pr merge <pr> --squash --delete-branch`, then `git checkout main; git pull --ff-only`.
-6. Release the merge commit:
+6. Tag the merge commit; the Release workflow builds the signed zip, creates the GitHub release from the CHANGELOG section and refreshes the update feeds. Wait for it to pass:
 
    ```powershell
    git tag -a vX.Y.Z -m "vX.Y.Z" <merge-sha>; git push origin vX.Y.Z
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes "<CHANGELOG section>"
+   gh run watch (gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
    ```
 
 7. Deploy to production (`npo-workdash.apes.org.uk`, app `b253bb6f-f66a-49cc-aa7f-79464eebdc91`):
