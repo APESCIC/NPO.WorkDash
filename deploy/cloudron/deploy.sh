@@ -32,8 +32,10 @@ if [[ ! -f "$SHARED/.env" ]]; then
     exit 1
 fi
 
-if [[ -f "$DATA/PHP_VERSION" ]] && command -v "php$(tr -d '[:space:]' < "$DATA/PHP_VERSION")" > /dev/null; then
-    PHP_BIN="php$(tr -d '[:space:]' < "$DATA/PHP_VERSION")"
+# The file holds `; comment` lines and `PHP_VERSION=8.3`.
+php_version="$(grep -v '^[[:space:]]*;' "$DATA/PHP_VERSION" 2> /dev/null | grep -oE '[0-9]+\.[0-9]+' | tail -n1 || true)"
+if [[ -n "$php_version" ]] && command -v "php$php_version" > /dev/null; then
+    PHP_BIN="php$php_version"
 else
     PHP_BIN=php
 fi

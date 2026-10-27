@@ -14,8 +14,10 @@ APP_DIR="${APP_DIR:-/app/data/workdash}"
 PHP_VERSION_FILE=/app/data/PHP_VERSION
 
 # The CLI `php` is always the image default, so use the version the web server runs.
-if [[ -f "$PHP_VERSION_FILE" ]] && command -v "php$(tr -d '[:space:]' < "$PHP_VERSION_FILE")" > /dev/null; then
-    PHP_BIN="php$(tr -d '[:space:]' < "$PHP_VERSION_FILE")"
+# The file holds `; comment` lines and `PHP_VERSION=8.3`.
+php_version="$(grep -v '^[[:space:]]*;' "$PHP_VERSION_FILE" 2> /dev/null | grep -oE '[0-9]+\.[0-9]+' | tail -n1 || true)"
+if [[ -n "$php_version" ]] && command -v "php$php_version" > /dev/null; then
+    PHP_BIN="php$php_version"
 else
     PHP_BIN=php
 fi

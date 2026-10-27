@@ -6,7 +6,7 @@ Hosted multi-tenant SaaS for UK charities and CICs, built with Laravel 12, React
 
 Production runs on the Cloudron LAMP app with MySQL 8.0. Local development uses [Laragon](https://laragon.org/) on Windows.
 
-Key technical decisions are recorded as [architecture decision records](docs/adr/README.md).
+Key technical decisions are recorded as [architecture decision records](docs/adr/README.md). Deployment to production (<https://npo-workdash.apes.org.uk/>) is described in the [Cloudron deployment guide](docs/deploy/cloudron.md).
 
 ## Local setup
 
