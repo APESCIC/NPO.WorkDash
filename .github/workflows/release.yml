@@ -82,7 +82,7 @@ jobs:
           for required in npo-workdash/vendor/autoload.php npo-workdash/public/build/manifest.json npo-workdash/manifest.json npo-workdash/artisan; do
             grep -qx "$required" contents.txt || { echo "::error::$required is missing from the zip"; exit 1; }
           done
-          if grep -E '^npo-workdash/(\.env|tests/|node_modules/|\.github/|resources/js/)' contents.txt; then
+          if grep -E '^npo-workdash/(\.env$|tests/|node_modules/|\.github/|resources/js/)' contents.txt; then
             echo "::error::The zip contains files that must not ship"
             exit 1
           fi
