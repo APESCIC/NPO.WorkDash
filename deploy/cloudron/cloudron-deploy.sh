@@ -39,10 +39,21 @@ log() {
     echo "==> $*"
 }
 
+deploy_started=0
+
 fail() {
     echo "ERROR: $*" >&2
-    echo "Live code is unchanged unless deploy.sh reached the symlink switch. To go back: cloudron exec --app $APP -- bash /app/data/rollback.sh, then cloudron restart --app $APP (see docs/deploy/cloudron.md)." >&2
+    if [[ "$deploy_started" -eq 1 ]]; then
+        echo "To go back to the previous release: cloudron exec --app $APP -- bash /app/data/rollback.sh, then cloudron restart --app $APP (see docs/deploy/cloudron.md)." >&2
+    else
+        echo "Nothing was deployed; the live app is unchanged." >&2
+    fi
     exit 1
+}
+
+# MSYS_NO_PATHCONV: stop Git Bash rewriting remote paths like /app/data into C:/Program Files/Git/app/data.
+cloudron() {
+    MSYS_NO_PATHCONV=1 command cloudron "$@"
 }
 
 remote() {
@@ -64,9 +75,13 @@ remote_archive="/app/data/releases/$name.tar.gz"
 
 log "Deploying $tag ($sha) to $APP ($URL)"
 
-log "Building $archive"
-bash deploy/cloudron/build-release.sh "$tag"
-[[ -f "$archive" ]] || fail "build did not produce $archive"
+if [[ -f "$archive" ]]; then
+    log "Reusing $archive"
+else
+    log "Building $archive"
+    bash deploy/cloudron/build-release.sh "$tag"
+    [[ -f "$archive" ]] || fail "build did not produce $archive"
+fi
 
 log "Uploading release"
 remote "mkdir -p /app/data/releases"
@@ -109,6 +124,7 @@ fi
 remote "[[ -f /app/data/shared/.env ]]" || fail "/app/data/shared/.env is missing. Re-run with --bootstrap for a fresh app."
 
 log "Running deploy.sh on the app"
+deploy_started=1
 remote "bash /app/data/deploy.sh '$remote_archive'" || fail "deploy.sh failed (see output above). The site may still be in maintenance mode."
 
 log "Restarting the app"
