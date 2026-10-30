@@ -1,8 +1,41 @@
 {
     "schema": 1,
     "channel": "stable",
-    "generated_at": "2026-10-27T06:30:17+00:00",
+    "generated_at": "2026-10-30T03:45:52+00:00",
     "releases": [
+        {
+            "version": "0.2.1",
+            "channel": "stable",
+            "released_at": "2026-10-30T03:44:13+00:00",
+            "changelog": "No changes to the application: installs and updates behave exactly as in 0.2.0.\n\n### Changed\n\n- GitHub is again the only host for code, issues, milestones, pull requests, CI and releases. A same-day switch of `AGENTS.md`, the Cursor rules and the docs to Gitea was reverted before release, and GitHub issues are turned back on.",
+            "size": 11726304,
+            "sha256": "79c76639874b6057ed1f81ba443743df0d2158ecba7ba9a044e545573c4ce355",
+            "download_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.1/npo-workdash-0.2.1.zip",
+            "signature_url": "https://github.com/APESCIC/NPO.WorkDash/releases/download/v0.2.1/npo-workdash-0.2.1.zip.sig",
+            "requirements": {
+                "php": "8.3.0",
+                "mysql": "8.0.0",
+                "mariadb": "10.6.0",
+                "extensions": [
+                    "ctype",
+                    "curl",
+                    "dom",
+                    "fileinfo",
+                    "filter",
+                    "hash",
+                    "mbstring",
+                    "openssl",
+                    "pcre",
+                    "pdo",
+                    "pdo_mysql",
+                    "session",
+                    "tokenizer",
+                    "xml",
+                    "zip"
+                ]
+            },
+            "min_update_from": "0.1.0"
+        },
         {
             "version": "0.2.0",
             "channel": "stable",
