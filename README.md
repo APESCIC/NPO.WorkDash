@@ -8,8 +8,6 @@ Production runs on the Cloudron LAMP app with MySQL 8.0. Local development uses 
 
 AI agents (and humans) should start with [AGENTS.md](AGENTS.md): the work lifecycle from issue to deployed release, and the checks to run.
 
-The primary repository, with the issues, milestones and pull requests, is on [Gitea](https://gitea.intranet.apes.org.uk/APESCIC/NPO.WorkDash). [GitHub](https://github.com/APESCIC/NPO.WorkDash) runs CI and publishes the signed releases and update feeds; its issues are turned off, so report problems on Gitea.
-
 Key technical decisions are recorded as [architecture decision records](docs/adr/README.md). Deployment to production (<https://npo-workdash.apes.org.uk/>) is described in the [Cloudron deployment guide](docs/deploy/cloudron.md). To install a release on shared hosting (cPanel, Plesk, DirectAdmin), Cloudron or a VPS, and to update it, follow the [install and update guides](docs/install/README.md).
 
 ## Local setup
@@ -101,7 +99,7 @@ npm run format:check
 
 ### Continuous integration
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on GitHub for every push and pull request to `main`, in four parallel jobs. Gitea has no Actions runner, so each Gitea pull request gets a draft "CI only" pull request on GitHub (see [AGENTS.md](AGENTS.md)).
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request to `main`, in four parallel jobs:
 
 - **Secret scanning**: gitleaks over the full git history, configured by [`.gitleaks.toml`](.gitleaks.toml).
 - **PHP lint and static analysis**: Pint and Larastan.

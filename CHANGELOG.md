@@ -8,18 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 1. Move the entries under **Unreleased** into a new `## [X.Y.Z] - YYYY-MM-DD` section, grouped as Added, Changed, Deprecated, Removed, Fixed or Security.
 2. Set `VERSION` to the same `X.Y.Z`. CI fails if `VERSION` is not valid semver.
-3. Merge to `main` on Gitea, push `main` to GitHub, then tag the merge commit `vX.Y.Z` and push the tag to both. The Release workflow on GitHub builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
+3. Merge to `main`, then tag the merge commit `vX.Y.Z`. The Release workflow builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
 4. Deploy the tag to staging, then production (see the deployment guide).
 
 While the major version is 0, bump the minor version for new features or breaking changes and the patch version for fixes.
 
 ## [Unreleased]
-
-## [0.2.1] - 2026-10-30
-
-### Changed
-
-- Gitea (`gitea.intranet.apes.org.uk/APESCIC/NPO.WorkDash`) is now the primary repository for code, issues, milestones and pull requests. GitHub keeps running CI and publishing the signed releases and update feeds, so installs and updates are unchanged. `AGENTS.md`, the Cursor rules, the README and the docs now use `tea` for issues and pull requests, Gitea milestone names, and Gitea issue dependencies for parent links. Each Gitea pull request gets a draft "CI only" pull request on GitHub, and `main` and tags are pushed to both hosts.
 
 ## [0.2.0] - 2026-10-27
 
@@ -138,8 +132,7 @@ First stable release with install and updates: NPO.WorkDash now installs from on
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.1...HEAD
-[0.2.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0...v0.2.1
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0
 [0.2.0-beta.3]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...v0.2.0-beta.3
 [0.2.0-beta.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...v0.2.0-beta.2
