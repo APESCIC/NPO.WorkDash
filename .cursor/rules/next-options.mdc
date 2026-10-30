@@ -10,11 +10,11 @@ Whenever a decision is needed, and at the end of every task, give the best next 
 - Two to four options, each with a one-line reason or trade-off.
 - Put the recommended option first and label it "(Recommended)".
 - If the decision blocks progress, ask with the AskQuestion tool instead of listing options in prose.
-- Prefer options that move the current milestone forward (`gh api repos/APESCIC/NPO.WorkDash/milestones` shows open counts).
+- Prefer options that move the current milestone forward (`tea milestones ls` shows open and closed counts).
 
 Example ending:
 
 > Next options:
-> 1. **(Recommended)** Start epic #89 (multi-tenancy and Super Admin): it unblocks every M1 story.
+> 1. **(Recommended)** Start epic #89 (multi-tenancy and Super Admin): it unblocks every v0.3.0 SaaS core story.
 > 2. Add a staging Cloudron app: safer releases, costs about 1 GB of RAM.
 > 3. Automate deploys from GitHub Actions: needs a Cloudron API token as a repository secret.

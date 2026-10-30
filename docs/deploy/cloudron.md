@@ -176,7 +176,7 @@ Where logs go (with the `LOG_STACK=daily,stderr` setting from the env template):
 
 ## Acceptance checklist
 
-Run this after the first deploy to an app (staging first, if there is one), and tick it off on the GitHub issue:
+Run this after the first deploy to an app (staging first, if there is one), and tick it off on the Gitea issue:
 
 - [ ] `https://<app domain>/` loads over HTTPS with a valid certificate, and `/login` shows the login page.
 - [ ] Registering and logging in works, and the verification email arrives.
