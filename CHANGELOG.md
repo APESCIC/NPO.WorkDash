@@ -15,6 +15,14 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-30
+
+No changes to the application: installs and updates behave exactly as in 0.2.0.
+
+### Changed
+
+- GitHub is again the only host for code, issues, milestones, pull requests, CI and releases. A same-day switch of `AGENTS.md`, the Cursor rules and the docs to Gitea was reverted before release, and GitHub issues are turned back on.
+
 ## [0.2.0] - 2026-10-27
 
 First stable release with install and updates: NPO.WorkDash now installs from one signed zip on shared hosting, Cloudron or a VPS, and updates itself from the browser or the command line. It includes everything from 0.2.0-beta.1, beta.2 and beta.3 below.
@@ -132,7 +140,8 @@ First stable release with install and updates: NPO.WorkDash now installs from on
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0
 [0.2.0-beta.3]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...v0.2.0-beta.3
 [0.2.0-beta.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.1...v0.2.0-beta.2
