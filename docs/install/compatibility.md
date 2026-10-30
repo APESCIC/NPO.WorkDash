@@ -19,7 +19,7 @@ It drives the update one step per PHP process, as the web updater does, so each 
 
 ## Tested by hand
 
-Manual install and update passes on real hosting plans, recorded before 1.0 ([#214](https://github.com/APESCIC/NPO.WorkDash/issues/214)):
+Manual install and update passes on real hosting plans, recorded before 1.0 ([#214](https://gitea.intranet.apes.org.uk/APESCIC/NPO.WorkDash/issues/214)):
 
 | Panel | Host and plan | PHP | Database | Date | Result |
 | --- | --- | --- | --- | --- | --- |

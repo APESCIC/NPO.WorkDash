@@ -5,18 +5,32 @@ alwaysApply: true
 
 # Commit, merge, release, deploy
 
-Work is done only when it is live. Full detail: `AGENTS.md`, "Definition of done" and "Deploying to Cloudron".
+Work is done only when it is live. Full detail: `AGENTS.md`, "Definition of done" and "Deploying to Cloudron". PRs and merges happen on Gitea (`tea`, remote `origin`); CI and releases run on GitHub (`gh`, remote `github`).
 
 1. Run the checks: `composer ci:check` (and `npm run build` if the frontend changed).
 2. In the PR, move the change from `## [Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD` in `CHANGELOG.md` and set `VERSION`. While 0.x: minor for features or breaking changes, patch for fixes, chores and docs.
-3. Commit, push, `gh pr create --base main` with `Closes #<issue>`.
-4. `gh pr checks <pr> --watch` until green. Never merge red.
-5. `gh pr merge <pr> --squash --delete-branch`, then `git checkout main; git pull --ff-only`.
-6. Tag the merge commit; the Release workflow builds the signed zip, creates the GitHub release from the CHANGELOG section and refreshes the update feeds. Wait for it to pass:
+3. Commit, `git push -u origin <branch>`, then `tea pulls create --base main --head <branch>` with `Closes #<issue>`.
+4. Run CI on GitHub with a draft PR that is never merged, and wait until green. Never merge red.
 
    ```powershell
-   git tag -a vX.Y.Z -m "vX.Y.Z" <merge-sha>; git push origin vX.Y.Z
-   gh run watch (gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
+   git push github <branch>
+   gh pr create -R APESCIC/NPO.WorkDash --draft --base main --head <branch> --title "CI only: <title>" --body "Checks for <Gitea PR URL>."
+   gh pr checks <github-pr> -R APESCIC/NPO.WorkDash --watch
+   ```
+
+5. Merge on Gitea and bring GitHub up to date:
+
+   ```powershell
+   tea pulls merge <pr> --style squash; git push origin --delete <branch>
+   git checkout main; git pull --ff-only; git push github main
+   gh pr close <github-pr> -R APESCIC/NPO.WorkDash --delete-branch --comment "Merged on Gitea: <Gitea PR URL>"
+   ```
+
+6. Tag the merge commit and push it to both hosts; the Release workflow on GitHub builds the signed zip, creates the GitHub release from the CHANGELOG section and refreshes the update feeds. Wait for it to pass:
+
+   ```powershell
+   git tag -a vX.Y.Z -m "vX.Y.Z" <merge-sha>; git push origin vX.Y.Z; git push github vX.Y.Z
+   gh run watch -R APESCIC/NPO.WorkDash (gh run list -R APESCIC/NPO.WorkDash --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
    ```
 
 7. Deploy to production (`npo-workdash.apes.org.uk`, app `b253bb6f-f66a-49cc-aa7f-79464eebdc91`):
@@ -26,6 +40,6 @@ Work is done only when it is live. Full detail: `AGENTS.md`, "Definition of done
    ```
 
    It must end with `/up` returning 200 and the live `REVISION` matching. If it fails, read the output, fix or roll back (`docs/deploy/cloudron.md`), and report it.
-8. Report: PR link, short merge SHA, release link, deploy evidence, issues closed.
+8. Report: Gitea PR link, short merge SHA, GitHub release link, deploy evidence, issues closed.
 
-Do not claim a step happened without its command output.
+Never add a Gitea push mirror to GitHub: it force-pushes every ref and would overwrite `gh-pages`, which serves the update feeds. Do not claim a step happened without its command output.

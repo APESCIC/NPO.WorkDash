@@ -1,32 +1,36 @@
 ---
-description: Keep GitHub milestones, issues and sub-issues current for every change in NPO.WorkDash
+description: Keep Gitea milestones, issues and parent links current for every change in NPO.WorkDash
 alwaysApply: true
 ---
 
 # Work lifecycle
 
-Full detail: `AGENTS.md`, section "Work lifecycle". Repository: `APESCIC/NPO.WorkDash`.
+Full detail: `AGENTS.md`, sections "Where things live" and "Work lifecycle". Issues, milestones and PRs live on Gitea (`APESCIC/NPO.WorkDash` at `gitea.intranet.apes.org.uk`, the `origin` remote); use `tea` from inside the clone. GitHub issues are turned off.
 
 Before the first edit:
 
-1. Find the issue (`gh issue list --search "..."`) or create one with a `[Epic]`, `[Story]`, `[Task]`, `[Bug]` or `[Chore]` title prefix, the matching label, area labels, and the usual body sections (Summary, Context / why, Scope, Acceptance criteria, Out of scope, Dependencies).
-2. Set its milestone (`gh issue edit <n> --milestone "M0 Foundation"`) and link it under its parent:
+1. Find the issue (`tea issues ls --keyword "..."`) or create one with a `[Epic]`, `[Story]`, `[Task]`, `[Bug]` or `[Chore]` title prefix, the matching label, area labels, and the usual body sections (Summary, Context / why, Scope, Acceptance criteria, Out of scope, Dependencies):
 
    ```powershell
-   $id = gh api repos/APESCIC/NPO.WorkDash/issues/<child> --jq '.id'
-   gh api -X POST repos/APESCIC/NPO.WorkDash/issues/<parent>/sub_issues -F sub_issue_id=$id
+   tea issues create --title "[Task] ..." --description-file <body.md> --labels "task,devops" --milestone "v0.3.0 SaaS core"
+   ```
+
+2. Milestones are named after their release (`tea milestones ls`). Link the issue under its parent by making the parent depend on it, so the parent cannot close first:
+
+   ```powershell
+   tea api -X POST "/repos/{owner}/{repo}/issues/<parent>/dependencies" -f owner=APESCIC -f repo=NPO.WorkDash -F index=<child>
    ```
 
 3. Branch from `main`: `cursor/{feature|fix|chore}/<issue>-<slug>`. Never commit to `main`.
 
 While working:
 
-- Comment on the issue for decisions, blockers, scope changes and when the PR opens.
-- Split large work into linked sub-issues instead of growing one issue.
+- Comment on the issue (`tea comment <n> "..."`) for decisions, blockers, scope changes and when the PR opens.
+- Split large work into linked child issues instead of growing one issue.
 - Tick acceptance criteria as they are met.
 
 When finished:
 
 - Close the leaf issue with a comment linking the PR and release.
-- Close a parent only when all its sub-issues are closed.
-- Check the milestone's open/closed count.
+- Close a parent only when all its children are closed.
+- Check the milestone's open/closed count (`tea milestones ls`).
