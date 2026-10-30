@@ -75,4 +75,4 @@ Rotating `APP_KEY` **without** adding the old key to `APP_PREVIOUS_KEYS` logs ev
 1. **Revoke or rotate the secret at the provider first.** Removing it from git does not make it safe, because it may already have been cloned or cached.
 2. Update the value in `/app/data/.env` on the affected Cloudron apps and re-run `php artisan config:cache`.
 3. Remove the secret from the code in a normal PR. Rewriting history is only needed if the repository could become public, and needs agreement first because it breaks everyone's clones.
-4. Record what happened in the Gitea issue for the incident.
+4. Record what happened in the GitHub issue for the incident.

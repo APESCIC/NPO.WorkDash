@@ -8,7 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 1. Move the entries under **Unreleased** into a new `## [X.Y.Z] - YYYY-MM-DD` section, grouped as Added, Changed, Deprecated, Removed, Fixed or Security.
 2. Set `VERSION` to the same `X.Y.Z`. CI fails if `VERSION` is not valid semver.
-3. Merge to `main` on Gitea, push `main` to GitHub, then tag the merge commit `vX.Y.Z` and push the tag to both. The Release workflow on GitHub builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
+3. Merge to `main`, then tag the merge commit `vX.Y.Z`. The Release workflow builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
 4. Deploy the tag to staging, then production (see the deployment guide).
 
 While the major version is 0, bump the minor version for new features or breaking changes and the patch version for fixes.
@@ -17,9 +17,11 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [0.2.1] - 2026-10-30
 
+No changes to the application: installs and updates behave exactly as in 0.2.0.
+
 ### Changed
 
-- Gitea (`gitea.intranet.apes.org.uk/APESCIC/NPO.WorkDash`) is now the primary repository for code, issues, milestones and pull requests. GitHub keeps running CI and publishing the signed releases and update feeds, so installs and updates are unchanged. `AGENTS.md`, the Cursor rules, the README and the docs now use `tea` for issues and pull requests, Gitea milestone names, and Gitea issue dependencies for parent links. Each Gitea pull request gets a draft "CI only" pull request on GitHub, and `main` and tags are pushed to both hosts.
+- GitHub is again the only host for code, issues, milestones, pull requests, CI and releases. A same-day switch of `AGENTS.md`, the Cursor rules and the docs to Gitea was reverted before release, and GitHub issues are turned back on.
 
 ## [0.2.0] - 2026-10-27
 
