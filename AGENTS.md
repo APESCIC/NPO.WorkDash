@@ -62,7 +62,7 @@ Every change-making task follows this, start to finish. Use `gh`; GitHub MCP is 
 1. Search first: `gh issue list --search "<keywords>" --state open`. Reuse a fitting issue; create one only if none fits.
 2. Title prefix and label by type: `[Epic]` (multi-PR initiative), `[Story]` (user-facing slice), `[Task]`, `[Bug]`, `[Chore]`. Add the area labels used on sibling issues (for example `foundation`, `devops`, `p1-mvp`).
 3. Body sections, as on existing issues: Summary, Context / why, Scope, Acceptance criteria (checkboxes), Out of scope, Dependencies.
-4. Set the milestone (`M0 Foundation` to `M8 Launch`, `M0.5 Install and updates`): `gh issue edit <n> --milestone "<title>"`.
+4. Set the milestone, whose title starts with its version (for example `v0.3.0 SaaS core`): `gh issue edit <n> --milestone "<title>"`. See [Milestone versioning](#milestone-versioning).
 5. Link it under its parent story or epic:
 
    ```powershell
@@ -105,6 +105,15 @@ Work is not done until it is **committed, merged, released and deployed**:
 8. **Close out**: confirm the issue closed (or close it with a comment linking the PR and release), close parents only when all children are done, and check the milestone's progress.
 
 If several PRs are in flight, the one merged second rebases and takes the next version.
+
+## Milestone versioning
+
+Every milestone, branch, PR title, `CHANGELOG.md` heading, tag and release uses the milestone's version (`v0.3.0`), never GitHub's milestone number. The rule is [`.cursor/rules/milestone-versioning.mdc`](.cursor/rules/milestone-versioning.mdc).
+
+- `composer milestone:next` prints the next milestone (the lowest open version above the latest tag) and its branch name. `composer milestone:pr-title -- <issue>` prints the PR title.
+- `composer milestone:check-title -- "<title>"`, `milestone:check-branch -- "<branch>"` and `milestone:check-release -- vX.Y.Z "<release title>" --changelog "## [X.Y.Z] - YYYY-MM-DD"` fail with the reason. CI runs the title and branch checks on every pull request (`.github/workflows/milestone-version-check.yml`).
+- Skills: [`start-next-milestone`](.cursor/skills/start-next-milestone/SKILL.md), [`milestone-release-titles`](.cursor/skills/milestone-release-titles/SKILL.md) and `/next-milestone`. Script: `scripts/milestone-version`.
+- Optional local check before each push: `git config core.hooksPath .githooks`.
 
 ## Deploying to Cloudron
 
