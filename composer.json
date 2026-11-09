@@ -39,6 +39,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "Scripts\\MilestoneVersion\\": "scripts/MilestoneVersion/",
             "Tests\\": "tests/"
         }
     },
@@ -86,6 +87,12 @@
             "@php artisan config:clear --ansi",
             "@php vendor/bin/pest --coverage"
         ],
+        "milestone:next": "@php scripts/milestone-version next",
+        "milestone:branch": "@php scripts/milestone-version branch",
+        "milestone:pr-title": "@php scripts/milestone-version pr-title",
+        "milestone:check-title": "@php scripts/milestone-version check-title",
+        "milestone:check-branch": "@php scripts/milestone-version check-branch",
+        "milestone:check-release": "@php scripts/milestone-version check-release",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
