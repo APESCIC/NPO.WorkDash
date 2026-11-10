@@ -1,0 +1,29 @@
+# Updates go to the long-lived `dependencies` branch, never straight to `main`.
+# Each milestone branch merges `origin/dependencies` when work on it starts, so
+# updates ship inside the milestone's single merge. See AGENTS.md.
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    target-branch: dependencies
+    schedule:
+      interval: weekly
+    groups:
+      composer:
+        patterns: ['*']
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dependencies
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ['*']
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dependencies
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']
