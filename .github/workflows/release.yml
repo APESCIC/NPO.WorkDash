@@ -81,7 +81,7 @@ jobs:
       # takes about 15 minutes there against a few seconds here.
       - name: Build the Cloudron archive
         run: |
-          deploy/cloudron/build-release.sh "${{ steps.version.outputs.tag }}"
+          bash deploy/cloudron/build-release.sh "${{ steps.version.outputs.tag }}"
           cd dist
           archive="$(ls npo-workdash-"${{ steps.version.outputs.version }}"-*.tar.gz)"
           sha256sum "$archive" > "$archive.sha256"
