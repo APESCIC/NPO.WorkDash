@@ -53,7 +53,7 @@ The database and mail credentials are not in `.env`: the app reads the addon's `
 
 For a tag that exists on `origin`, the script:
 
-1. builds the archive with `build-release.sh`
+1. downloads the Cloudron archive that `release.yml` built on Linux and attached to the tag's GitHub Release, and checks its SHA-256. A local `build-release.sh` build on Windows took about 15 minutes (920 s cold, 822 s with cached dependencies); the CI build of the whole release takes about 2.5 minutes. Only if the release has no archive does it build one locally
 2. uploads it to `/app/data/releases/` with `cloudron push`
 3. installs `run.sh`, `deploy.sh`, `rollback.sh` and the Apache config from that release, so script fixes ship with each release
 4. runs `deploy.sh` on the app with `cloudron exec`, then restarts the app with `cloudron restart`

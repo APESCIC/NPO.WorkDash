@@ -77,6 +77,16 @@ jobs:
       - name: Build the zip
         run: deploy/release/build-package.sh "${{ steps.version.outputs.tag }}"
 
+      # cloudron-deploy.sh downloads this instead of building on Windows, which
+      # takes about 15 minutes there against a few seconds here.
+      - name: Build the Cloudron archive
+        run: |
+          deploy/cloudron/build-release.sh "${{ steps.version.outputs.tag }}"
+          cd dist
+          archive="$(ls npo-workdash-"${{ steps.version.outputs.version }}"-*.tar.gz)"
+          sha256sum "$archive" > "$archive.sha256"
+          echo "Built $archive"
+
       - name: Check the zip contents
         run: |
           zip="dist/npo-workdash-${{ steps.version.outputs.version }}.zip"
@@ -171,6 +181,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      issues: read
     steps:
       - uses: actions/download-artifact@v8
         with:
@@ -183,14 +194,21 @@ jobs:
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          assets=(dist/npo-workdash-"$VERSION".zip dist/npo-workdash-"$VERSION".zip.sha256 dist/npo-workdash-"$VERSION".zip.sig dist/manifest.json dist/feed-entry.json)
+          assets=(dist/npo-workdash-"$VERSION".zip dist/npo-workdash-"$VERSION".zip.sha256 dist/npo-workdash-"$VERSION".zip.sig dist/manifest.json dist/feed-entry.json dist/npo-workdash-"$VERSION"-*.tar.gz dist/npo-workdash-"$VERSION"-*.tar.gz.sha256)
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
           else
+            # Title: v<version> <milestone name>, from the milestone whose title starts with the version.
+            milestone_title="$(gh api "repos/$GH_REPO/milestones?state=all&per_page=100" --paginate \
+              --jq '.[] | .title | select(startswith(env.GITHUB_REF_NAME + " ") or startswith(env.GITHUB_REF_NAME + ":"))' | head -n1 || true)"
+            name="${milestone_title#"$GITHUB_REF_NAME"}"
+            name="${name#:}"
+            if [[ "$name" == *:* ]]; then name="${name#*:}"; fi
+            name="$(sed -E 's/^[[:space:]]+|[[:space:]]+$//g' <<<"$name")"
             flags=()
             [[ "${{ needs.build.outputs.prerelease }}" == true ]] && flags+=(--prerelease)
             gh release create "$GITHUB_REF_NAME" "${assets[@]}" --verify-tag \
-              --title "$GITHUB_REF_NAME" --notes-file dist/notes.md "${flags[@]}"
+              --title "${GITHUB_REF_NAME}${name:+ $name}" --notes-file dist/notes.md "${flags[@]}"
           fi
 
   feed:
