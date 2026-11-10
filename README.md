@@ -10,74 +10,45 @@ AI agents (and humans) should start with [AGENTS.md](AGENTS.md): the work lifecy
 
 Key technical decisions are recorded as [architecture decision records](docs/adr/README.md). Deployment to production (<https://npo-workdash.apes.org.uk/>) is described in the [Cloudron deployment guide](docs/deploy/cloudron.md). To install a release on shared hosting (cPanel, Plesk, DirectAdmin), Cloudron or a VPS, and to update it, follow the [install and update guides](docs/install/README.md).
 
-## Local setup
+## Local development with Laragon
 
-### Prerequisites
+Laragon on Windows is the only supported local set-up. NPO WorkDash is its own Laragon project at <http://npo-workdash.test>: Apache running PHP 8.3 (as on the Cloudron app) through FastCGI, MySQL 8.4 with `npo_workdash_local` (tests use `npo_workdash_testing`), Vite hot reload on port 5177 and Mailpit for email. The values are in [docs/laragon/profile.md](docs/laragon/profile.md). Production runs MySQL 8.0, so avoid 8.4-only SQL.
 
-- **Laragon** with Apache, MySQL 8.x and Mailpit enabled (Laragon currently ships MySQL 8.4; production is MySQL 8.0, so avoid 8.4-only SQL).
-- **PHP 8.3+ CLI** on your `PATH`, with `pdo_mysql`, `mbstring`, `intl`, `fileinfo`, `openssl` and `zip`. Composer is pinned to the PHP 8.3 platform so the lockfile works with Laragon's Apache PHP 8.3.
-- **pcov** extension in the CLI PHP, only needed for `composer test:coverage`. On Windows, download the matching DLL (PHP version, thread-safe or not, x64) from `https://downloads.php.net/~windows/pecl/releases/pcov/`, copy `php_pcov.dll` into PHP's `ext` folder and add `extension=pcov` to `php.ini`.
-- **Composer 2**
-- **Node 22+** and npm
+### 1. Set up
 
-### 1. Serve the app from Laragon
-
-Link the repository into Laragon's web root (PowerShell, adjust the source path):
+Install Laragon (Full) with Apache, MySQL and Mailpit, start it, clone this repository, then run from the repository root:
 
 ```powershell
-New-Item -ItemType Junction -Path C:\laragon\www\npo-workdash -Target C:\path\to\NPO.WorkDash
+composer setup
 ```
 
-Create `C:\laragon\etc\apache2\sites-enabled\auto.npo-workdash.test.conf`:
+`composer setup` runs [`scripts/laragon-setup.ps1`](scripts/laragon-setup.ps1). It is safe to run again and only touches this project:
 
-```apache
-<VirtualHost *:80>
-    DocumentRoot "C:/laragon/www/npo-workdash/public"
-    ServerName npo-workdash.test
-    ServerAlias *.npo-workdash.test
-    <Directory "C:/laragon/www/npo-workdash/public">
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
-```
+- links `C:\laragon\www\npo-workdash` to the clone and checks PHP 8.3 and its extensions;
+- checks WorkDash's own vhost runs PHP 8.3 through FastCGI. The first time, run `scripts\laragon-setup.ps1 -InstallVhost`, which copies [`docs/laragon/npo-workdash.test.conf`](docs/laragon/npo-workdash.test.conf) into Laragon; then restart Apache;
+- copies `.env.example` (Laragon values: `APP_URL=http://npo-workdash.test`, MySQL as `root`, mail to Mailpit) to `.env`, and generates `APP_KEY`;
+- installs Composer and npm dependencies, creates both databases and migrates;
+- offers the demo data.
 
-In Laragon, click **Start All** (or **Reload** if it is already running). Laragon adds `npo-workdash.test` to the hosts file and starts Apache, MySQL and Mailpit.
+See [configuration and secrets](docs/security/secrets.md) for how staging, production and CI are configured.
 
-### 2. Create the databases
-
-Laragon's MySQL listens on `127.0.0.1:3306` as `root` with an empty password. Create the app and test databases with HeidiSQL or the mysql CLI:
+### 2. Before any work: the live preview gate
 
 ```powershell
-C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe -h 127.0.0.1 -uroot -e "CREATE DATABASE IF NOT EXISTS npo_workdash CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS npo_workdash_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\preview.ps1
 ```
 
-### 3. Install and configure
+It loads the latest code (merging `origin/main`, never rebasing), installs changed dependencies, reports pending migrations, checks `/up` shows the checked-out revision through FastCGI, and starts Vite. Then open <http://npo-workdash.test>.
 
-```powershell
-composer install
-npm install
-Copy-Item .env.example .env
-php artisan key:generate
-php artisan migrate:fresh --seed
-```
+### 3. Run it
 
-`.env.example` is already set up for Laragon: `APP_URL=http://npo-workdash.test`, MySQL on `127.0.0.1:3306` as `root`, and mail sent over SMTP to Mailpit on `127.0.0.1:1025`. It documents every environment variable the app reads. See [configuration and secrets](docs/security/secrets.md) for how staging, production and CI are configured, and how secrets and `APP_KEY` are handled.
-
-Seeding in the `local` environment creates a fictional demo account: `demo@example.test` / `password`. Seeders never contain real personal data: seeded email addresses must use the reserved `example.test` domain, and a test enforces this. Outside `local`, `db:seed` creates no demo accounts. Each module adds its own demo data to `DemoSeeder` as it lands (the demo Super Admin arrives with the Super Admin area in M1).
-
-Reset your local database to a clean, seeded state at any time with `php artisan migrate:fresh --seed`.
-
-### 4. Run it
-
-**Option A, Laragon (recommended):** run `npm run dev` for Vite with hot module replacement, then open <http://npo-workdash.test>. Laravel serves assets from the Vite dev server while `public/hot` exists.
-
-**Option B, without Apache:** run `composer dev`. This starts `php artisan serve` on <http://127.0.0.1:8000>, the queue worker and Vite together. Set `APP_URL=http://127.0.0.1:8000` in `.env` if you use this option.
-
-Emails (for example registration verification) appear in Mailpit at <http://127.0.0.1:8025>.
+`composer dev` runs the queue worker and Vite with hot module replacement (or `npm run dev` for Vite only); Apache serves the app at <http://npo-workdash.test>. Emails (for example registration verification) appear in Mailpit at <http://127.0.0.1:8025>.
 
 If a page renders blank and the Vite output shows `Failed to resolve import "@/..."` for a file that exists (this can happen after switching branches), stop and restart `npm run dev` or `composer dev`.
 
+### 4. Demo data
+
+`php artisan demo:seed` loads fictional demo data; `php artisan demo:reset` empties the local database and reloads it. Both refuse unless `APP_ENV=local`. Logins: [docs/laragon/demo-data.md](docs/laragon/demo-data.md).
 ### 5. Test
 
 ```powershell

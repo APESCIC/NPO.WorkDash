@@ -1,0 +1,28 @@
+{
+    "project": "npo-workdash",
+    "folder": "C:\\laragon\\www\\npo-workdash",
+    "hostname": "npo-workdash.test",
+    "appUrl": "http://npo-workdash.test",
+    "documentRoot": "public",
+    "webServer": "apache",
+    "apache": "2.4",
+    "php": "8.3",
+    "phpBuild": "php-8.3.33-Win32-vs16-x64",
+    "phpThreadSafe": true,
+    "apacheHandler": "fcgid",
+    "siteVhost": "docs/laragon/npo-workdash.test.conf",
+    "phpExtensions": ["bcmath", "curl", "fileinfo", "intl", "mbstring", "openssl", "pdo_mysql", "zip"],
+    "database": {
+        "engine": "mysql",
+        "version": "8.4",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "name": "npo_workdash_local",
+        "testing": "npo_workdash_testing",
+        "username": "root",
+        "charset": "utf8mb4",
+        "collation": "utf8mb4_unicode_ci"
+    },
+    "node": "22",
+    "devServerPort": 5177
+}
