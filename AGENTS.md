@@ -21,14 +21,14 @@ Hosted multi-tenant SaaS for UK charities and CICs. APES is tenant #1.
 - **Secrets** never go into git, issues, PRs or chat. See [docs/security/secrets.md](docs/security/secrets.md). gitleaks runs in CI.
 - MySQL 8.0 in production: avoid 8.4-only SQL.
 
-## Local preview
+## Local development (Laragon)
 
-Check for a running server before starting one.
+Laragon on Windows is the only supported local set-up: <http://npo-workdash.test>, PHP 8.3 (as on Cloudron) through FastCGI in its own vhost, MySQL 8.4 (`npo_workdash_local`, tests in `npo_workdash_testing`), Vite hot reload on port 5177 and Mailpit at <http://127.0.0.1:8025>. Never use `php artisan serve` or another local stack. Profile: [docs/laragon/profile.md](docs/laragon/profile.md).
 
-- **Laragon (preferred)**: Laragon running, then `npm run dev`. Open <http://npo-workdash.test>. Mail goes to Mailpit at <http://127.0.0.1:8025>.
-- **Without Apache**: `composer dev` serves <http://127.0.0.1:8000> with the queue worker and Vite (set `APP_URL` to match).
-- Reset data: `php artisan migrate:fresh --seed` (demo login `demo@example.test` / `password`).
-
+- Set up or repair: `composer setup` (`scripts/laragon-setup.ps1`, safe to run twice).
+- Before any development or coding work, run the live preview gate in [`.cursor/rules/laragon-local-dev.mdc`](.cursor/rules/laragon-local-dev.mdc): `scripts\preview.ps1`, then open the preview in Cursor's browser.
+- Daily loop: `composer dev` (queue worker and Vite) or `npm run dev`.
+- Demo data: `php artisan demo:seed` and `php artisan demo:reset` (fake data only; both refuse unless `APP_ENV=local`). Logins: [docs/laragon/demo-data.md](docs/laragon/demo-data.md).
 ## Checks
 
 Run these before pushing. CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs the same and must be green before merge.
@@ -53,68 +53,31 @@ Fix style with `composer lint` (Pint) and `npm run lint` / `npm run format`.
 - Every behaviour change ships with Pest tests (feature tests for HTTP and jobs, isolation tests for tenant models).
 - Migrations are expand-first (add, backfill, then remove in a later release) so `rollback.sh` stays safe.
 
-## Work lifecycle
+## Issues
 
-Every change-making task follows this, start to finish. Use `gh`; GitHub MCP is optional.
-
-### 1. Issue and milestone
+Use `gh`; GitHub MCP is optional.
 
 1. Search first: `gh issue list --search "<keywords>" --state open`. Reuse a fitting issue; create one only if none fits.
-2. Title prefix and label by type: `[Epic]` (multi-PR initiative), `[Story]` (user-facing slice), `[Task]`, `[Bug]`, `[Chore]`. Add the area labels used on sibling issues (for example `foundation`, `devops`, `p1-mvp`).
+2. Title prefix and label by type: `[Epic]`, `[Story]`, `[Task]`, `[Bug]`, `[Chore]`, plus the area labels used on sibling issues (for example `foundation`, `devops`, `p1-mvp`).
 3. Body sections, as on existing issues: Summary, Context / why, Scope, Acceptance criteria (checkboxes), Out of scope, Dependencies.
-4. Set the milestone, whose title starts with its version (for example `v0.3.0 SaaS core`): `gh issue edit <n> --milestone "<title>"`. See [Milestone versioning](#milestone-versioning).
-5. Link it under its parent story or epic:
+4. Every issue has a milestone whose title starts with its version (`v0.3.0 SaaS core`), and is linked under its parent:
 
    ```powershell
    $id = gh api repos/APESCIC/NPO.WorkDash/issues/<child> --jq '.id'
    gh api -X POST repos/APESCIC/NPO.WorkDash/issues/<parent>/sub_issues -F sub_issue_id=$id
    ```
 
-6. If the work splits, open sub-issues and link them the same way.
+5. Comment on the issue when something load-bearing happens: a decision, a blocker, a scope change or the commit. Tick acceptance criteria as they are met.
 
-### 2. Branch
+## Shipping and versioning
 
-Never commit to `main`. Branch from an up-to-date `main`:
+Every milestone ships once, by its version, never by GitHub's milestone number: every issue committed on one `milestone/vX-Y-Z-<slug>` branch behind one draft pull request, **one merge commit** into `main` (never a squash), one `vX.Y.Z` tag and Release, and one Cloudron deploy of that tag. Issues close when that pull request merges; the milestone is done only after the deploy is verified. The single rule is [`.cursor/rules/version-shipping.mdc`](.cursor/rules/version-shipping.mdc). Agents run it with the [`complete-next-version`](.cursor/skills/complete-next-version/SKILL.md) and [`release-version`](.cursor/skills/release-version/SKILL.md) skills, or `/complete-next-version`.
 
-- `cursor/feature/<issue>-<slug>`, `cursor/fix/<issue>-<slug>` or `cursor/chore/<issue>-<slug>` (lowercase kebab-case slug).
-- Reuse the branch if one already exists for the issue. Push with `git push -u origin <branch>`; never force-push.
-
-### 3. While working
-
-Comment on the issue when something load-bearing happens: a decision, a blocker, a scope change, or the PR opening (`gh issue comment <n> --body "..."`). Tick acceptance criteria as they are met.
-
-### 4. Definition of done
-
-Work is not done until it is **committed, merged, released and deployed**:
-
-1. **Commit** focused commits with imperative messages.
-2. **Release notes in the PR**: add the change under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md), then move it into a new `## [X.Y.Z] - YYYY-MM-DD` section and set [VERSION](VERSION) to `X.Y.Z`. While the major version is 0: **minor** for features or breaking changes, **patch** for fixes, chores and docs. Update the compare links at the bottom.
-3. **PR**: `gh pr create --base main --milestone "<milestone>"` using the [PR template](.github/pull_request_template.md), with `Closes #<issue>`.
-4. **CI green**: `gh pr checks <pr> --watch`. Fix failures; do not merge red.
-5. **Merge**: `gh pr merge <pr> --squash --delete-branch`, then `git checkout main; git pull --ff-only`.
-6. **Release**: tag the merge commit. The [Release workflow](.github/workflows/release.yml) builds the signed zip, creates the GitHub release with the CHANGELOG section as notes (a pre-release for `-beta.N` tags) and refreshes the update feeds. Wait for it to pass:
-
-   ```powershell
-   git tag -a vX.Y.Z -m "vX.Y.Z" <merge-sha>; git push origin vX.Y.Z
-   gh run watch (gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
-   ```
-
-   Details and signing-key handling: [docs/security/release-signing.md](docs/security/release-signing.md).
-
-7. **Deploy** to Cloudron (below) and verify.
-8. **Close out**: confirm the issue closed (or close it with a comment linking the PR and release), close parents only when all children are done, and check the milestone's progress.
-
-If several PRs are in flight, the one merged second rebases and takes the next version.
-
-## Milestone versioning
-
-Every milestone, branch, PR title, `CHANGELOG.md` heading, tag and release uses the milestone's version (`v0.3.0`), never GitHub's milestone number. The rule is [`.cursor/rules/milestone-versioning.mdc`](.cursor/rules/milestone-versioning.mdc).
-
-- `composer milestone:next` prints the next milestone (the lowest open version above the latest tag) and its branch name. `composer milestone:pr-title -- <issue>` prints the PR title.
-- `composer milestone:check-title -- "<title>"`, `milestone:check-branch -- "<branch>"` and `milestone:check-release -- vX.Y.Z "<release title>" --changelog "## [X.Y.Z] - YYYY-MM-DD"` fail with the reason. CI runs the title and branch checks on every pull request (`.github/workflows/milestone-version-check.yml`).
-- Skills: [`start-next-milestone`](.cursor/skills/start-next-milestone/SKILL.md), [`milestone-release-titles`](.cursor/skills/milestone-release-titles/SKILL.md) and `/next-milestone`. Script: `scripts/milestone-version`.
+- `VERSION` and the `CHANGELOG.md` section are set once, in the milestone pull request: `composer milestone:bump -- vX.Y.Z`, then move the Unreleased entries into `## [X.Y.Z] - YYYY-MM-DD`.
+- `composer milestone:next`, `milestone:check-title`, `milestone:check-branch` and `milestone:check-release -- vX.Y.Z "<title>" --changelog "## [X.Y.Z] - YYYY-MM-DD"` (`scripts/milestone-version`). CI runs the title and branch checks on every pull request.
+- Dependabot opens grouped weekly pull requests into the `dependencies` branch, never `main`.
+- Security checks use only free GitHub features: Dependabot, dependency review and CodeQL (JavaScript/TypeScript and Actions; CodeQL has no PHP support, so PHP is covered by Pest and Larastan). gitleaks (open source) runs in CI.
 - Optional local check before each push: `git config core.hooksPath .githooks`.
-
 ## Deploying to Cloudron
 
 | | |

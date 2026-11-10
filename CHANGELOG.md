@@ -6,10 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## Release convention
 
-1. Move the entries under **Unreleased** into a new `## [X.Y.Z] - YYYY-MM-DD` section, grouped as Added, Changed, Deprecated, Removed, Fixed or Security.
-2. Set `VERSION` to the same `X.Y.Z`. CI fails if `VERSION` is not valid semver.
-3. Merge to `main`, then tag the merge commit `vX.Y.Z`. The Release workflow builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
-4. Deploy the tag to staging, then production (see the deployment guide).
+Each milestone is released once, at the version in its milestone title (see [`.cursor/rules/version-shipping.mdc`](.cursor/rules/version-shipping.mdc)). In the milestone pull request's last commit:
+
+1. Run `composer milestone:bump -- vX.Y.Z` to set `VERSION`.
+2. Move the entries under **Unreleased** into a new `## [X.Y.Z] - YYYY-MM-DD` section, grouped as Added, Changed, Deprecated, Removed, Fixed or Security.
+3. After the single merge, tag the merge commit `vX.Y.Z`. The Release workflow builds and signs the zip and publishes the GitHub release with this section as its notes. Pre-release tags (`vX.Y.Z-beta.N`) go to the beta channel only.
+4. Deploy that tag to production with `deploy/cloudron/cloudron-deploy.sh vX.Y.Z` (see the deployment guide). There is no staging app.
 
 While the major version is 0, bump the minor version for new features or breaking changes and the patch version for fixes.
 
