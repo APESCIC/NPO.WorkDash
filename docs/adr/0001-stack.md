@@ -12,7 +12,7 @@ NPO.WorkDash is a hosted SaaS for UK charities and CICs covering fundraising, co
 
 - **Backend**: Laravel 12 on PHP 8.3, using the official React starter kit (Fortify authentication).
 - **Frontend**: React 19 with TypeScript and Tailwind CSS, served through Inertia.js, so there is no separate API for the first-party UI.
-- **Database**: MySQL 8.0 (utf8mb4). Local development uses Laragon's MySQL 8.4, so 8.4-only SQL is avoided.
+- **Database**: MySQL 8.0 (utf8mb4). Local development uses Laravel Herd's MySQL 8.4, so 8.4-only SQL is avoided.
 - **Build**: Vite with hot module replacement.
 - **Tests**: Pest (with the Laravel plugin) for unit and feature tests, against MySQL rather than SQLite so behaviour matches production.
 - **Quality**: Laravel Pint, Larastan, ESLint, Prettier and `tsc` in CI.

@@ -13,8 +13,10 @@
 #   CLOUDRON_APP  app ID or location (default: production)
 #   DEPLOY_URL    public URL to verify (default: production)
 #
-# Requires a logged-in cloudron CLI (`cloudron login <server>`) plus everything
-# build-release.sh needs. Run from Git Bash on Windows.
+# Requires a logged-in cloudron CLI (`cloudron login <server>`) and gh. It uses the
+# Cloudron archive release.yml attached to the tag's GitHub Release (checked against
+# its SHA-256), and only builds locally, with everything build-release.sh needs,
+# when the release has none. Run from Git Bash on Windows.
 
 set -euo pipefail
 
@@ -74,13 +76,20 @@ archive="dist/$name.tar.gz"
 remote_archive="/app/data/releases/$name.tar.gz"
 
 log "Deploying $tag ($sha) to $APP ($URL)"
+deploy_clock=$SECONDS
 
+started=$SECONDS
 if [[ -f "$archive" ]]; then
     log "Reusing $archive"
+elif mkdir -p dist && gh release download "$tag" --pattern "$name.tar.gz" --pattern "$name.tar.gz.sha256" --dir dist --clobber 2> /dev/null; then
+    # Built on Linux by release.yml from the same tag, which is much faster than building here.
+    (cd dist && sha256sum --check --strict "$name.tar.gz.sha256") || fail "the downloaded $name.tar.gz does not match its checksum"
+    log "Downloaded $archive from the $tag release ($((SECONDS - started)) s)"
 else
-    log "Building $archive"
+    log "Building $archive (the $tag release has no Cloudron archive)"
     bash deploy/cloudron/build-release.sh "$tag"
     [[ -f "$archive" ]] || fail "build did not produce $archive"
+    log "Built in $((SECONDS - started)) s"
 fi
 
 log "Uploading release"
@@ -142,4 +151,4 @@ done
 live="$(remote "cat /app/data/workdash/REVISION" | tr -d '[:space:]')"
 [[ "$live" == "$sha" ]] || fail "live REVISION is '$live', expected $sha"
 
-log "Deployed $tag ($sha): $URL/up returned 200 and REVISION matches"
+log "Deployed $tag ($sha) in $((SECONDS - deploy_clock)) s: $URL/up returned 200 and REVISION matches"

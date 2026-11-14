@@ -1,0 +1,30 @@
+{
+    "project": "npo-workdash",
+    "herdSite": "npo-workdash",
+    "hostname": "npo-workdash.test",
+    "appUrl": "http://npo-workdash.test",
+    "documentRoot": "public",
+    "webServer": "nginx",
+    "php": "8.3",
+    "phpIsolated": true,
+    "phpSapi": "cgi-fcgi",
+    "phpExtensions": ["bcmath", "curl", "fileinfo", "intl", "mbstring", "openssl", "pdo_mysql", "zip"],
+    "database": {
+        "engine": "mysql",
+        "version": "8.4",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "name": "npo_workdash_local",
+        "testing": "npo_workdash_testing",
+        "username": "root",
+        "charset": "utf8mb4",
+        "collation": "utf8mb4_unicode_ci"
+    },
+    "mail": {
+        "mailer": "smtp",
+        "host": "127.0.0.1",
+        "port": 2525
+    },
+    "node": "22",
+    "devServerPort": 5177
+}

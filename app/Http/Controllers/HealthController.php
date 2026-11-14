@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\HealthCheck;
+use App\Support\LocalRevision;
 use Illuminate\Http\JsonResponse;
 
 class HealthController extends Controller
@@ -15,10 +16,21 @@ class HealthController extends Controller
     {
         $result = $health->run();
 
-        return response()->json([
+        $body = [
             'status' => $result['ok'] ? 'ok' : 'failing',
             'version' => $result['version'],
             'checks' => $result['checks'],
-        ], $result['ok'] ? 200 : 503, ['Cache-Control' => 'no-store']);
+        ];
+
+        // The live preview gate checks the Herd preview serves this checkout through FastCGI.
+        if (app()->environment('local')) {
+            $body['local'] = [
+                'php' => PHP_VERSION,
+                'php_sapi' => PHP_SAPI,
+                'git_revision' => (new LocalRevision(base_path()))->current(),
+            ];
+        }
+
+        return response()->json($body, $result['ok'] ? 200 : 503, ['Cache-Control' => 'no-store']);
     }
 }

@@ -1,0 +1,9 @@
+{
+    "fields": [
+        { "file": "VERSION", "type": "plain" }
+    ],
+    "notes": [
+        "Move the CHANGELOG.md entries under ## [Unreleased] into ## [X.Y.Z] - YYYY-MM-DD and update the compare links.",
+        "Check: composer milestone:check-release -- vX.Y.Z \"<release title>\" --changelog \"## [X.Y.Z] - YYYY-MM-DD\""
+    ]
+}

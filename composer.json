@@ -23,7 +23,6 @@
         "larastan/larastan": "^3.13",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
-        "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "pestphp/pest": "^4.7",
@@ -39,26 +38,24 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "Scripts\\MilestoneVersion\\": "scripts/MilestoneVersion/",
             "Tests\\": "tests/"
         }
     },
     "scripts": {
         "setup": [
-            "composer install",
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "npm install",
-            "npm run build"
+            "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/herd-setup.ps1"
         ],
+        "demo:seed": "@php artisan demo:seed",
+        "demo:reset": "@php artisan demo:reset",
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"npm run dev\" --names=server,queue,vite --kill-others"
+            "npx concurrently -c \"#c4b5fd,#fdba74\" \"php artisan queue:listen --tries=1 --timeout=0\" \"npm run dev\" --names=queue,vite --kill-others"
         ],
         "dev:ssr": [
             "npm run build:ssr",
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan inertia:start-ssr\" --names=server,queue,ssr --kill-others"
+            "npx concurrently -c \"#c4b5fd,#fdba74\" \"php artisan queue:listen --tries=1\" \"php artisan inertia:start-ssr\" --names=queue,ssr --kill-others"
         ],
         "lint": [
             "pint --parallel"
@@ -86,6 +83,13 @@
             "@php artisan config:clear --ansi",
             "@php vendor/bin/pest --coverage"
         ],
+        "milestone:next": "@php scripts/milestone-version next",
+        "milestone:branch": "@php scripts/milestone-version branch",
+        "milestone:pr-title": "@php scripts/milestone-version pr-title",
+        "milestone:check-title": "@php scripts/milestone-version check-title",
+        "milestone:check-branch": "@php scripts/milestone-version check-branch",
+        "milestone:check-release": "@php scripts/milestone-version check-release",
+        "milestone:bump": "@php scripts/milestone-version bump",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
