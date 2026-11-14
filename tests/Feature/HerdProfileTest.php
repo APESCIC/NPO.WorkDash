@@ -1,11 +1,11 @@
 <?php
 
-function laragonProfile(): array
+function herdProfile(): array
 {
-    return json_decode((string) file_get_contents(base_path('docs/laragon/profile.json')), true, flags: JSON_THROW_ON_ERROR);
+    return json_decode((string) file_get_contents(base_path('docs/herd/profile.json')), true, flags: JSON_THROW_ON_ERROR);
 }
 
-function laragonEnvExample(): array
+function herdEnvExample(): array
 {
     $values = [];
     foreach (file(base_path('.env.example'), FILE_IGNORE_NEW_LINES) ?: [] as $line) {
@@ -17,9 +17,9 @@ function laragonEnvExample(): array
     return $values;
 }
 
-test('the env example uses the Laragon profile values', function () {
-    $profile = laragonProfile();
-    $env = laragonEnvExample();
+test('the env example uses the Herd profile values', function () {
+    $profile = herdProfile();
+    $env = herdEnvExample();
 
     expect($env['APP_ENV'])->toBe('local')
         ->and($env['APP_URL'])->toBe($profile['appUrl'])
@@ -28,32 +28,31 @@ test('the env example uses the Laragon profile values', function () {
         ->and($env['DB_DATABASE'])->toBe($profile['database']['name'])
         ->and($env['DB_DATABASE'])->toEndWith('_local')
         ->and($env['DB_USERNAME'])->toBe($profile['database']['username'])
-        ->and($env['DB_PASSWORD'])->toBe('');
+        ->and($env['DB_PASSWORD'])->toBe('')
+        ->and($env['MAIL_MAILER'])->toBe($profile['mail']['mailer'])
+        ->and($env['MAIL_HOST'])->toBe($profile['mail']['host'])
+        ->and((int) $env['MAIL_PORT'])->toBe($profile['mail']['port']);
 });
 
 test('the tests use the profile test database', function () {
     expect((string) file_get_contents(base_path('phpunit.xml')))
-        ->toContain('<env name="DB_DATABASE" value="'.laragonProfile()['database']['testing'].'"/>');
+        ->toContain('<env name="DB_DATABASE" value="'.herdProfile()['database']['testing'].'"/>');
 });
 
-test('the folder and Vite port match the profile', function () {
-    $profile = laragonProfile();
+test('the Herd site and Vite port match the profile', function () {
+    $profile = herdProfile();
 
-    expect($profile['hostname'])->toBe($profile['project'].'.test')
-        ->and($profile['folder'])->toBe('C:\\laragon\\www\\'.$profile['project'])
+    expect($profile['hostname'])->toBe($profile['herdSite'].'.test')
+        ->and($profile['appUrl'])->toBe('http://'.$profile['hostname'])
+        ->and($profile['phpIsolated'])->toBeTrue()
         ->and((string) file_get_contents(base_path('vite.config.ts')))->toMatch('/port:\s*'.$profile['devServerPort'].',/')
         ->toContain('strictPort: true');
 });
 
-test('the vhost runs the profile PHP through FastCGI', function () {
-    $profile = laragonProfile();
-    $vhost = (string) file_get_contents(base_path($profile['siteVhost']));
+test('the profile PHP is the version composer.json allows', function () {
+    $composer = json_decode((string) file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
 
-    expect($profile['apacheHandler'])->toBe('fcgid')
-        ->and($profile['phpBuild'])->toStartWith('php-'.$profile['php'].'.')
-        ->and($vhost)->toContain('define WORKDASH_PHP "C:/laragon/bin/php/'.$profile['phpBuild'].'"')
-        ->toContain('FcgidWrapper "${WORKDASH_PHP}/php-cgi.exe" .php')
-        ->toContain('define ROOT "C:/laragon/www/'.$profile['project'].'/public"');
+    expect($composer['require']['php'])->toBe('^'.herdProfile()['php']);
 });
 
 test('public/.htaccess is safe under FastCGI', function () {

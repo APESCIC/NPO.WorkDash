@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Fictional demo data for the Laragon preview only: en_GB Faker with a fixed seed
+ * Fictional demo data for the local Herd preview only: en_GB Faker with a fixed seed
  * and example.test emails. Never seed real personal data. Refuses to run unless
  * APP_ENV=local.
  */
