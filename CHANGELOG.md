@@ -17,9 +17,27 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-14
+
+No changes to the application for charities: this release changes how NPO.WorkDash is developed, versioned, released and deployed.
+
+### Added
+
+- Fictional demo data for local development: `php artisan demo:seed` creates three tenants and 13 verified `example.test` users from a fixed en_GB seed, and `php artisan demo:reset` empties the local database and reloads it. Both refuse unless `APP_ENV=local` and the database is on 127.0.0.1. Logins are in `docs/herd/demo-data.md`.
+- `scripts/preview.ps1`, the live preview gate: it loads the latest code and checks the local site serves it. On local installs only, `/up` adds a `local` block with the PHP version, the PHP handler and the git revision.
+- Milestone version tooling: `composer milestone:next`, `milestone:bump`, `milestone:check-title`, `milestone:check-branch` and `milestone:check-release`, with a pull request title and branch check in CI.
+- The Release workflow also builds the Cloudron `.tar.gz` and attaches it with its SHA-256. `cloudron-deploy.sh` downloads and checks it instead of building on Windows, falls back to a local build when a release has none, and prints its total time.
+- CodeQL and dependency review on pull requests, and weekly grouped Dependabot version updates for Composer, npm and GitHub Actions into the `dependencies` branch.
+
 ### Changed
 
 - Local development and testing move from Laragon to Laravel Herd: the `npo-workdash` Herd site on PHP 8.3, Herd's MySQL 8.4 (`npo_workdash_local` and `npo_workdash_testing`) and Herd's mail catcher. `composer setup` runs `scripts/herd-setup.ps1`, and the profile and demo logins are in `docs/herd/`.
+- Each milestone ships once: one `milestone/vX-Y-Z-<slug>` branch, one merge commit into `main`, one `vX.Y.Z` tag and Release, and one Cloudron deploy of that tag. `VERSION` is set by `composer milestone:bump`, and the Release title is `v<version> <milestone name>`.
+- `composer dev` and `composer dev:ssr` no longer start `php artisan serve`.
+
+### Removed
+
+- The unused `laravel/sail` dev dependency, the Homestead `.gitignore` lines and the Semgrep comment.
 
 ## [0.2.1] - 2026-10-30
 
@@ -146,7 +164,8 @@ First stable release with install and updates: NPO.WorkDash now installs from on
 - Documented environment configuration with Cloudron MySQL and mail addon fallbacks, gitleaks secret scanning in CI, and a secrets handling guide.
 - Cloudron LAMP deployment: release build, deploy and rollback scripts, `run.sh` supervising the queue worker and scheduler, queue and scheduler heartbeats, and a deployment guide for the production app at npo-workdash.apes.org.uk.
 
-[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.1.2...v0.2.0
 [0.2.0-beta.3]: https://github.com/APESCIC/NPO.WorkDash/compare/v0.2.0-beta.2...v0.2.0-beta.3
