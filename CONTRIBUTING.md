@@ -1,6 +1,6 @@
 # Contributing
 
-Please write in UK English. Local setup is in the [README](README.md): Laragon only, `composer setup` once, and `scripts\preview.ps1` before any work.
+Please write in UK English. Local setup is in the [README](README.md): Laravel Herd only, `composer setup` once, and `scripts\preview.ps1` before any work.
 
 ## How work ships
 

@@ -17,6 +17,10 @@ While the major version is 0, bump the minor version for new features or breakin
 
 ## [Unreleased]
 
+### Changed
+
+- Local development and testing move from Laragon to Laravel Herd: the `npo-workdash` Herd site on PHP 8.3, Herd's MySQL 8.4 (`npo_workdash_local` and `npo_workdash_testing`) and Herd's mail catcher. `composer setup` runs `scripts/herd-setup.ps1`, and the profile and demo logins are in `docs/herd/`.
+
 ## [0.2.1] - 2026-10-30
 
 No changes to the application: installs and updates behave exactly as in 0.2.0.

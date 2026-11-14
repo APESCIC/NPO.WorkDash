@@ -1,0 +1,31 @@
+---
+description: Laravel Herd local set-up and the live preview gate for NPO WorkDash (PHP 8.3, Vite on 5177)
+alwaysApply: true
+---
+
+# Laravel Herd local development
+
+Laravel Herd Pro on Windows is the only local set-up (decided by Bambie on 14 November 2026, #240). Never suggest containers, virtual machines or another server stack, and never run `php artisan serve` locally. The values are in `docs/herd/profile.json`; the guide is `docs/herd/profile.md`.
+
+## Preview gate slots
+
+The live preview gate follows Cursor's `live-preview-gate` and `herd-local-preview` skills. This repository fills their slots:
+
+| Slot | Value |
+| --- | --- |
+| Herd site | `npo-workdash`, PHP 8.3 isolated (as on Cloudron) |
+| Preview URL | <http://npo-workdash.test> |
+| Preview command | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\preview.ps1` (exit 3 needs a decision, exit 1 is a blocker) |
+| HMR port | Vite on 5177 (strict) |
+| Set up or repair | `composer setup` (`scripts\herd-setup.ps1`, safe to run twice) |
+| Database | Herd MySQL 8.4: `npo_workdash_local`, tests in `npo_workdash_testing` (production is MySQL 8.0, so avoid 8.4-only SQL) |
+| Mail | Herd's mail catcher, SMTP `127.0.0.1:2525` |
+
+A failing scheduler check on `/up` is expected locally unless `php artisan schedule:work` runs.
+
+## Herd facts
+
+- Herd's global PHP is newer than 8.3. Use `herd php` and `herd composer`, or put `%USERPROFILE%\.config\herd\bin\php83` first on `PATH`, for Artisan, Composer and the tests.
+- The Herd MCP server serves this site as `npo-workdash`: `site` `error`, `logs` `read`, `insights`, `mail` and `env` (it masks secrets).
+- Keep `public/.htaccess` (Cloudron's Apache; nginx ignores it) free of `php_value` and `php_flag` outside `<IfModule php_module>`, and keep the `HTTP_AUTHORIZATION` rewrite rule. A test checks both.
+- Demo data: `php artisan demo:seed` and `php artisan demo:reset` (fake data only; both refuse unless `APP_ENV=local`). Logins: `docs/herd/demo-data.md`.

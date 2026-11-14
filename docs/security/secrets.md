@@ -8,7 +8,7 @@ NPO.WorkDash will hold credentials for Stripe, HMRC Charities Online, mail provi
 
 | Environment | Location | Database and mail credentials |
 | --- | --- | --- |
-| Local (Laragon) | `.env` in the repository root, copied from `.env.example` | `DB_*` and `MAIL_*` in `.env` (Laragon MySQL as `root`, Mailpit) |
+| Local (Laravel Herd) | `.env` in the repository root, copied from `.env.example` | `DB_*` and `MAIL_*` in `.env` (Herd MySQL as `root`, Herd's mail catcher) |
 | CI (GitHub Actions) | Job `env:` blocks in `.github/workflows/ci.yml`, plus GitHub Actions secrets for anything sensitive | MySQL service container, set in the workflow |
 | Staging and production (Cloudron) | `/app/data/.env` on each Cloudron LAMP app | Read automatically from Cloudron's `CLOUDRON_MYSQL_*` and `CLOUDRON_MAIL_SMTP_*` variables |
 
