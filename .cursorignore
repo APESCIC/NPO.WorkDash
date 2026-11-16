@@ -1,0 +1,35 @@
+# Env and credentials
+.env
+.env.*
+!.env.example
+auth.json
+**/credentials.txt
+**/*.pem
+**/*.key
+storage/*.key
+
+# Dependencies and large generated trees
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/public/storage
+/bootstrap/ssr/
+/dist/
+/.vite/
+/.phpunit.cache/
+
+# Wayfinder generated (gitignored)
+/resources/js/actions/
+/resources/js/routes/
+/resources/js/wayfinder/
+
+# Logs and caches
+npm-debug.log
+yarn-error.log
+.phpunit.result.cache
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/pail/
