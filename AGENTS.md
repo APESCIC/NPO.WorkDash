@@ -1,14 +1,16 @@
-# AGENTS.md
+# Agent instructions for NPO WorkDash
 
 Cursor's user rules and skills set how work is done here (branches, issues, pull requests, merge, release, deploy, ship gate, decisions and safety). This file describes this repository and fills the named slots below. If anything here disagrees with them, Cursor's rules win and this file is corrected in the same milestone.
 
-Guidance for AI coding agents (Cursor and others) working on NPO.WorkDash. Humans are welcome too. The [README](README.md) has the full local setup.
+Cursor/agent layout standard: https://github.com/apescic-director/Cursor/blob/bmurphy/cursor-agent-standard-81b0/docs/cursor-agent-standards.md
+
+The owner is Bambie Murphy. Write UK English (organisation, behaviour, colour, licence) in the product, docs, issues and pull requests. Never print, paste or commit secrets. Secrets live only in APES Vault (Bitwarden); see [docs/security/secrets.md](docs/security/secrets.md).
 
 ## About the app
 
 Hosted multi-tenant SaaS for UK charities and CICs. APES is tenant #1. Live at <https://npo-workdash.apes.org.uk/>.
 
-- **Repository**: `APESCIC/NPO.WorkDash`, default branch `main`. Work only in this repository.
+- Repository: `APESCIC/NPO.WorkDash`, default branch `main`. Work only in this repository.
 
 ## Stack and architecture
 
@@ -23,19 +25,19 @@ Hosted multi-tenant SaaS for UK charities and CICs. APES is tenant #1. Live at <
 - **Tenant isolation** ([ADR 0002](docs/adr/0002-tenancy.md)): every tenant-owned table has an indexed `tenant_id`, every tenant-owned model uses the tenant scope, and every such model gets an isolation test. A missed scope is a data breach.
 - **Clean room** ([ADR 0005](docs/adr/0005-clean-room.md)): never copy WorkDo (or other proprietary) code, schemas, templates or assets. Third-party code only arrives through Composer or npm under a SaaS-compatible licence.
 - **No real personal data** in seeders, tests or fixtures. Use the `example.test` domain; a test enforces this.
-- **Secrets** never go into git, issues, PRs or chat. See [docs/security/secrets.md](docs/security/secrets.md). gitleaks runs in CI.
+- **Secrets** never go into git, issues, PRs or chat. They live in APES Vault. gitleaks runs in CI.
 - MySQL 8.0 in production: avoid 8.4-only SQL.
 
 ## Local development and preview
 
-Laravel Herd Pro on Windows is the only local set-up (decided by Bambie on 14 November 2026, [#240](https://github.com/APESCIC/NPO.WorkDash/issues/240)). Never use `php artisan serve`, containers or another local stack. Profile: [docs/herd/profile.md](docs/herd/profile.md) and [docs/herd/profile.json](docs/herd/profile.json).
+Laravel Herd Pro on Windows is the only local set-up (decided by Bambie on 14 November 2026, [#240](https://github.com/APESCIC/NPO.WorkDash/issues/240)). Never use `php artisan serve`, containers, Laragon or another local stack. Use fake demo data only. Profile: [docs/herd/profile.md](docs/herd/profile.md) and [docs/herd/profile.json](docs/herd/profile.json). Preview gate slots: [`.cursor/rules/herd.mdc`](.cursor/rules/herd.mdc).
 
 | Item | Value |
 | --- | --- |
 | Clone | `C:\Users\BambieMurphy\Documents\GitHub\NPO.WorkDash` |
 | Herd site | `npo-workdash` (linked; PHP 8.3 isolated, as on Cloudron) |
 | Preview URL | <http://npo-workdash.test> |
-| Preview command | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\preview.ps1` (slots in [`.cursor/rules/herd.mdc`](.cursor/rules/herd.mdc)) |
+| Preview command | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\preview.ps1` |
 | HMR port | Vite on 5177 (strict) |
 | Env file | `.env.example` (key names only, never values) |
 | Database | Herd MySQL 8.4 on 127.0.0.1:3306: `npo_workdash_local`, tests in `npo_workdash_testing` (production is MySQL 8.0) |
@@ -57,18 +59,19 @@ This project runs on Laravel Herd. Run `herd site:info` for the URL, PHP version
 - Use `herd insights:list` for `dump()` output, queries and logs of recent requests, and `herd insights:analyze` for N+1 queries, slow queries and errors.
 - Use `herd status` if something doesn't respond; `herd list` shows every command (`--json` for structured output).
 
-## Checks
+## Tests and checks
 
 Run these before pushing. CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs the same and must be green before merge.
 
-```powershell
-composer test            # Pint style check, then Pest
-composer analyse         # Larastan level 5
-npm run lint:check       # ESLint
-npm run format:check     # Prettier
-npm run types:check      # tsc
-composer ci:check        # all of the above except the Vite build
-```
+| Check | Command |
+| --- | --- |
+| Tests (Pint then Pest) | `composer test` |
+| Static analysis | `composer analyse` (Larastan level 5) |
+| ESLint | `npm run lint:check` |
+| Prettier | `npm run format:check` |
+| TypeScript | `npm run types:check` |
+| Full pre-push (no Vite build) | `composer ci:check` |
+| CI workflows | `.github/workflows/ci.yml`, milestone version checks, dependency review, CodeQL |
 
 Fix style with `composer lint` (Pint) and `npm run lint` / `npm run format`.
 
@@ -83,9 +86,9 @@ Fix style with `composer lint` (Pint) and `npm run lint` / `npm run format`.
 
 ## Issues
 
-Use `gh`; GitHub MCP is optional.
+Development is tracked only in GitHub issues, sub-issues and `vMAJOR.MINOR.PATCH` milestones — never Linear. Use `gh`; GitHub MCP is optional.
 
-1. Search first: `gh issue list --search "<keywords>" --state open`. Reuse a fitting issue; create one only if none fits.
+1. Search first: `gh issue list --search "<keywords>" --state open`. Reuse a fitting issue; create only if none fits.
 2. Title prefix and label by type: `[Epic]`, `[Story]`, `[Task]`, `[Bug]`, `[Chore]`, plus the area labels used on sibling issues (for example `foundation`, `devops`, `p1-mvp`).
 3. Body sections, as on existing issues: Summary, Context / why, Scope, Acceptance criteria (checkboxes), Out of scope, Dependencies.
 4. Every issue has a milestone whose title starts with its version (`v0.3.0 SaaS core`), and is linked under its parent:
@@ -97,30 +100,40 @@ Use `gh`; GitHub MCP is optional.
 
 5. Comment on the issue when something load-bearing happens: a decision, a blocker, a scope change or the commit. Tick acceptance criteria as they are met.
 
-## Shipping and versioning
+## Workflow slots
 
-Every milestone ships once, by its version, never by GitHub's milestone number: every issue committed on one `milestone/vX-Y-Z-<slug>` branch behind one draft pull request, **one merge commit** into `main` (never a squash), one `vX.Y.Z` tag and Release, and one Cloudron deploy of that tag. Issues close when that pull request merges; the milestone is done only after the deploy is verified. The single rule is [`.cursor/rules/version-shipping.mdc`](.cursor/rules/version-shipping.mdc). Agents run it with the [`complete-next-version`](.cursor/skills/complete-next-version/SKILL.md) and [`release-version`](.cursor/skills/release-version/SKILL.md) skills, or `/complete-next-version`.
+Shipping follows Cursor's `github-milestone-completion` and `ship-gate` skills. This repo fills these slots. The single shipping rule is [`.cursor/rules/version-shipping.mdc`](.cursor/rules/version-shipping.mdc); agents run [`complete-next-version`](.cursor/skills/complete-next-version/SKILL.md) and [`release-version`](.cursor/skills/release-version/SKILL.md), or `/complete-next-version`.
 
-- `VERSION` and the `CHANGELOG.md` section are set once, in the milestone pull request: `composer milestone:bump -- vX.Y.Z`, then move the Unreleased entries into `## [X.Y.Z] - YYYY-MM-DD`.
-- `composer milestone:next`, `milestone:check-title`, `milestone:check-branch` and `milestone:check-release -- vX.Y.Z "<title>" --changelog "## [X.Y.Z] - YYYY-MM-DD"` (`scripts/milestone-version`). CI runs the title and branch checks on every pull request.
-- Dependabot opens grouped weekly pull requests into the `dependencies` branch, never `main`.
-- Security checks use only free GitHub features: Dependabot, dependency review and CodeQL (JavaScript/TypeScript and Actions; CodeQL has no PHP support, so PHP is covered by Pest and Larastan). gitleaks (open source) runs in CI.
-- Optional local check before each push: `git config core.hooksPath .githooks`.
-## Deploying to Cloudron
-
-| | |
+| Slot | Value |
 | --- | --- |
-| Production URL | <https://npo-workdash.apes.org.uk/> |
-| Cloudron app ID | `b253bb6f-f66a-49cc-aa7f-79464eebdc91` (LAMP app) |
-| Staging | none yet |
+| Milestone branch pattern | `milestone/vX-Y-Z-<slug>`, printed by `composer milestone:next` |
+| Version files | `VERSION` (read by `config/app.php`), set once by `composer milestone:bump -- vX.Y.Z` |
+| Release tooling | Push tag `vX.Y.Z`; `release.yml` publishes the GitHub Release; finalise `CHANGELOG.md` in the bump commit |
+| Area labels | `foundation`, `devops`, `p1-mvp`, and type labels `epic`, `story`, `task`, `chore`, `bug` |
+| Issue title prefix | `[Type] Short title` |
 
-The `cloudron` CLI must be logged in (`cloudron list` works). Deploy a tag from Git Bash, or from PowerShell through Git Bash:
+- `VERSION` and the `CHANGELOG.md` section are set once in the milestone PR: `composer milestone:bump -- vX.Y.Z`, then move Unreleased entries into `## [X.Y.Z] - YYYY-MM-DD`.
+- `composer milestone:check-title`, `milestone:check-branch` and `milestone:check-release` validate names; CI runs the title and branch checks on every PR.
+- Dependabot opens grouped weekly PRs into the `dependencies` branch, never `main`.
+- Security checks use free GitHub features only: Dependabot, dependency review and CodeQL (JavaScript/TypeScript and Actions; PHP is covered by Pest and Larastan). gitleaks runs in CI.
+- Optional local check before each push: `git config core.hooksPath .githooks`.
 
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" deploy/cloudron/cloudron-deploy.sh vX.Y.Z
-```
+## Deploy and health
 
-The script builds the release, pushes it, runs `deploy.sh` on the app, restarts it, and fails unless `/up` returns 200 and the live `REVISION` matches the tag. `--bootstrap` is only for a fresh app. Full details, rollback and troubleshooting: [docs/deploy/cloudron.md](docs/deploy/cloudron.md).
+| Item | Value |
+| --- | --- |
+| Target | Cloudron LAMP app |
+| Cloudron app ID | `b253bb6f-f66a-49cc-aa7f-79464eebdc91` |
+| Domain | <https://npo-workdash.apes.org.uk/> |
+| Deploy command | `& "C:\Program Files\Git\bin\bash.exe" deploy/cloudron/cloudron-deploy.sh vX.Y.Z` |
+| Deploys | The release tag (never a branch) |
+| Auto-deploy couplings | None: merging and releasing do not deploy |
+| Health URL | <https://npo-workdash.apes.org.uk/up> |
+| Version field | Live `REVISION` must match the tag; `/up` must return 200 |
+| Secrets live in | APES Vault (never commit secrets) |
+| Staging | None yet |
+
+The `cloudron` CLI must be logged in (`cloudron list` works). The deploy script builds the release, pushes it, runs `deploy.sh` on the app, restarts it, and fails unless `/up` returns 200 and the live `REVISION` matches the tag. `--bootstrap` is only for a fresh app. Full details, rollback and troubleshooting: [docs/deploy/cloudron.md](docs/deploy/cloudron.md).
 
 Cloudron caveats:
 
@@ -130,9 +143,9 @@ Cloudron caveats:
 - Rolling back code does not roll back migrations.
 - Other agent sessions may be working in parallel (`git worktree list`, `gh pr list`). Check before deploying, and do not deploy a tag that would undo a fix still waiting to merge.
 
-## Decisions and next steps
+## Decisions and gotchas
 
-Whenever a choice is needed (or at the end of a task), give the **best next options** and mark **one as recommended**, with a one-line reason each. In Cursor, ask with the AskQuestion tool, recommended option first and labelled "(Recommended)". Do not stop with a vague "done": end with what shipped (PR, merge commit, release, deploy evidence) and the next options.
+- 2026-11-14: Laravel Herd Pro is the only local set-up for development and testing with fake demo data (Bambie, [#240](https://github.com/APESCIC/NPO.WorkDash/issues/240)). Do not document Laragon as current practice.
 
 ## Where to find things
 
@@ -140,5 +153,5 @@ Whenever a choice is needed (or at the end of a task), give the **best next opti
 - Architecture decisions: [docs/adr](docs/adr/README.md).
 - Deploy, rollback and troubleshooting: [docs/deploy/cloudron.md](docs/deploy/cloudron.md).
 - Install and update guides: [docs/install](docs/install).
-- Secrets: [docs/security/secrets.md](docs/security/secrets.md).
+- Secrets: [docs/security/secrets.md](docs/security/secrets.md) (APES Vault).
 - Release history: [CHANGELOG.md](CHANGELOG.md). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
