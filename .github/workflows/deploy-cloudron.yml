@@ -1,0 +1,154 @@
+# Deploy a published release tag to the NPO WorkDash Cloudron LAMP app.
+# Usage: gh workflow run deploy-cloudron.yml -f tag=vX.Y.Z
+# Environment cloudron-deploy: secrets CLOUDRON_FQDN, CLOUDRON_TOKEN;
+# vars CLOUDRON_APP_ID, APP_URL (https://npo-workdash.apes.org.uk).
+name: Deploy WorkDash to Cloudron
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Published release tag to deploy (vX.Y.Z)'
+        required: true
+        type: string
+
+run-name: Deploy ${{ inputs.tag }} to Cloudron
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cloudron-workdash
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Upload release archive and verify /up
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: cloudron-deploy
+      url: ${{ vars.APP_URL }}
+    env:
+      CLOUDRON_FQDN: ${{ secrets.CLOUDRON_FQDN }}
+      CLOUDRON_TOKEN: ${{ secrets.CLOUDRON_TOKEN }}
+      CLOUDRON_APP_ID: ${{ vars.CLOUDRON_APP_ID }}
+      APP_URL: ${{ vars.APP_URL }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Check tag and Cloudron environment secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::tag must be vX.Y.Z"; exit 1; }
+          for name in CLOUDRON_FQDN CLOUDRON_TOKEN CLOUDRON_APP_ID APP_URL; do
+            [[ -n "${!name:-}" ]] || { echo "::error::Missing $name"; exit 1; }
+          done
+
+      - name: Check out the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Confirm tag is on main and has a published Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=50
+          git merge-base --is-ancestor HEAD origin/main || { echo "::error::$TAG is not on main"; exit 1; }
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          echo "RELEASE_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "APP_VERSION=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_ENV"
+
+      - name: Install Cloudron CLI
+        run: npm install --global cloudron@9.0.4
+
+      - name: Create Cloudron backup before deploy
+        run: cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" backup create --app "$CLOUDRON_APP_ID"
+
+      - name: Download or build the release archive
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          name="npo-workdash-${APP_VERSION}-${RELEASE_SHA}"
+          mkdir -p dist
+          if gh release download "$TAG" --pattern "$name.tar.gz" --pattern "$name.tar.gz.sha256" --dir dist --clobber; then
+            (cd dist && sha256sum --check --strict "$name.tar.gz.sha256")
+          else
+            bash deploy/cloudron/build-release.sh "$TAG"
+          fi
+          test -f "dist/$name.tar.gz"
+          echo "ARCHIVE_NAME=$name" >> "$GITHUB_ENV"
+
+      - name: Upload archive and install deploy scripts on Cloudron
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="dist/${ARCHIVE_NAME}.tar.gz"
+          remote_archive="/app/data/releases/${ARCHIVE_NAME}.tar.gz"
+          cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" exec --app "$CLOUDRON_APP_ID" -- \
+            bash -c 'mkdir -p /app/data/releases'
+          cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" push --app "$CLOUDRON_APP_ID" \
+            "$archive" /app/data/releases/
+          cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" exec --app "$CLOUDRON_APP_ID" -- bash -c "
+            set -euo pipefail
+            tmp=\$(mktemp -d)
+            tar -xzf '$remote_archive' -C \"\$tmp\" deploy/cloudron
+            cp \"\$tmp\"/deploy/cloudron/{run.sh,deploy.sh,rollback.sh} /app/data/
+            chmod +x /app/data/{run.sh,deploy.sh,rollback.sh}
+            cp \"\$tmp\"/deploy/cloudron/apache-app.conf /app/data/apache/app.conf
+            rm -rf \"\$tmp\"
+          "
+          echo "REMOTE_ARCHIVE=$remote_archive" >> "$GITHUB_ENV"
+
+      - name: Run deploy.sh on the app
+        id: activate
+        continue-on-error: true
+        run: |
+          cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" exec --app "$CLOUDRON_APP_ID" -- \
+            bash /app/data/deploy.sh "$REMOTE_ARCHIVE"
+
+      - name: Restart the Cloudron app
+        id: restart
+        if: steps.activate.outcome == 'success'
+        continue-on-error: true
+        run: cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" restart --app "$CLOUDRON_APP_ID"
+
+      - name: Verify /up returns 200 and REVISION matches
+        id: verify
+        if: steps.restart.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$APP_URL/up" || true)"
+            live="$(cloudron --server "$CLOUDRON_FQDN" --token "$CLOUDRON_TOKEN" exec --app "$CLOUDRON_APP_ID" -- \
+              cat /app/data/workdash/REVISION 2>/dev/null | tr -d '[:space:]\r' || true)"
+            if [[ "$code" == "200" && "$live" == "$RELEASE_SHA" ]]; then
+              echo "Healthy at $RELEASE_SHA"
+              exit 0
+            fi
+            echo "Attempt $attempt: HTTP $code, REVISION '${live:-unknown}'"
+            sleep 5
+          done
+          echo "::error::$APP_URL/up did not verify"
+          exit 1
+
+      - name: Summarise deploy result
+        if: always()
+        shell: bash
+        env:
+          VERIFY: ${{ steps.verify.outcome }}
+        run: |
+          {
+            echo "## Cloudron deploy"
+            echo "- Tag: \`$TAG\`"
+            echo "- Verify: \`${VERIFY:-skipped}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [[ "$VERIFY" == "success" ]] || exit 1

@@ -125,7 +125,7 @@ Shipping follows Cursor's `github-milestone-completion` and `ship-gate` skills. 
 | Target | Cloudron LAMP app |
 | Cloudron app ID | `b253bb6f-f66a-49cc-aa7f-79464eebdc91` |
 | Domain | <https://npo-workdash.apes.org.uk/> |
-| Deploy command | `& "C:\Program Files\Git\bin\bash.exe" deploy/cloudron/cloudron-deploy.sh vX.Y.Z` |
+| Deploy command | `gh workflow run deploy-cloudron.yml -f tag=vX.Y.Z` (break-glass: `deploy/cloudron/cloudron-deploy.sh vX.Y.Z`) |
 | Deploys | The release tag (never a branch) |
 | Auto-deploy couplings | None: merging and releasing do not deploy |
 | Health URL | <https://npo-workdash.apes.org.uk/up> |
