@@ -2,7 +2,7 @@
 
 Cursor's user rules and skills set how work is done here (branches, issues, pull requests, merge, release, deploy, ship gate, decisions and safety). This file describes this repository and fills the named slots below. If anything here disagrees with them, Cursor's rules win and this file is corrected in the same milestone.
 
-Cursor/agent layout standard: https://github.com/apescic-director/Cursor/blob/main/docs/cursor-agent-standards.md
+Cursor user rules and personal skills (Agent Store) own process; this file fills named slots only.
 
 The owner is Bambie Murphy. Write UK English (organisation, behaviour, colour, licence) in the product, docs, issues and pull requests. Never print, paste or commit secrets. Secrets live only in APES Vault (Bitwarden); see [docs/security/secrets.md](docs/security/secrets.md).
 
@@ -125,7 +125,7 @@ Shipping follows Cursor's `github-milestone-completion` and `ship-gate` skills. 
 | Target | Cloudron LAMP app |
 | Cloudron app ID | `b253bb6f-f66a-49cc-aa7f-79464eebdc91` |
 | Domain | <https://npo-workdash.apes.org.uk/> |
-| Deploy command | `& "C:\Program Files\Git\bin\bash.exe" deploy/cloudron/cloudron-deploy.sh vX.Y.Z` |
+| Deploy command | `gh workflow run deploy-cloudron.yml -f tag=vX.Y.Z` (break-glass: `deploy/cloudron/cloudron-deploy.sh vX.Y.Z`) |
 | Deploys | The release tag (never a branch) |
 | Auto-deploy couplings | None: merging and releasing do not deploy |
 | Health URL | <https://npo-workdash.apes.org.uk/up> |
